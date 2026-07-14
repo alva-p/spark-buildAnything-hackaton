@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="https://auditsplit.alva-p.xyz/"><strong>Live Demo</strong></a> ·
   <a href="https://github.com/alva-p/spark-buildAnything-hackaton/actions/workflows/ci.yml"><img src="https://github.com/alva-p/spark-buildAnything-hackaton/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
 </p>
 
@@ -45,7 +46,7 @@ The contract uses pull-based claims: one recipient never needs to wait for, or d
 | Item | Deployment |
 |---|---|
 | Network | Monad Testnet · chain ID `10143` |
-| Frontend | Public deployment coming next |
+| Frontend | [auditsplit.alva-p.xyz](https://auditsplit.alva-p.xyz/) |
 | Factory | [`0xe3335E3Ea2DbFe0aff7e92331f86AB3C53314536`](https://testnet.monadscan.com/address/0xe3335E3Ea2DbFe0aff7e92331f86AB3C53314536) |
 | Factory deployment | [`0x26b26f…5c891be`](https://testnet.monadscan.com/tx/0x26b26f52422aa2328c2a829dde594b6458ae6aedd6d5fa55d8f24cb6e5c891be) |
 | Deployer | [`0xB2ca5438D2C30624FC19c9206F41B550d4A502E8`](https://testnet.monadscan.com/address/0xB2ca5438D2C30624FC19c9206F41B550d4A502E8) |
