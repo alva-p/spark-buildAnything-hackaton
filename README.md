@@ -105,4 +105,4 @@ npm run check:create --prefix apps/web
 
 ## Stack
 
-Solidity 0.8.24 · Foundry · OpenZeppelin v5 · Next.js · TypeScript · wagmi · viem · TanStack Query
+Solidity 0.8.24 · Foundry · OpenZeppelin v5 · Next.js · TypeScript · wagmi · viem · TanStack Query · Vercel Web Analytics
