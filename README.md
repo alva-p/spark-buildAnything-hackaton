@@ -41,7 +41,19 @@ The contract uses pull-based claims: one recipient never needs to wait for, or d
 - Responsive create, accept, payout, and claim flow.
 - 25 passing Foundry tests plus frontend lint and production build checks.
 
-## Monad Testnet
+## Monad deployments
+
+### Mainnet
+
+| Item | Deployment |
+|---|---|
+| Network | Monad Mainnet · chain ID `143` |
+| Factory | [`0x0ccbe83afD8423baE0094857B3D97cAec9B52D0C`](https://monadscan.com/address/0x0ccbe83afD8423baE0094857B3D97cAec9B52D0C) |
+| Factory deployment | [`0x7e6492…86ed8`](https://monadscan.com/tx/0x7e6492ad87d575bea55fe53249b012d4e3177aae711755d56f68b6e637d86ed8) |
+| Deployer | [`0xC56a071b9363F29B18538747b59670b7e6A3558b`](https://monadscan.com/address/0xC56a071b9363F29B18538747b59670b7e6A3558b) |
+| Verified source | [`exact_match` on Sourcify](https://sourcify-api-monad.blockvision.org/v2/verify/8ea28860-3aed-411c-bfaf-e3e29eb1dde1) |
+
+### Testnet
 
 | Item | Deployment |
 |---|---|
@@ -77,7 +89,7 @@ Both recipients finished with zero claimable balance and the vault finished with
 - No administrator can rewrite terms or withdraw user funds.
 - No report title, PoC, platform identifier, or vulnerability detail is stored onchain.
 
-This is hackathon software and has not received a production audit. Use it only on Monad Testnet.
+This is hackathon software and has not received a production audit. Use small amounts and proceed at your own risk.
 
 ## Run locally
 
