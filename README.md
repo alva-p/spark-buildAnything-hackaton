@@ -1,133 +1,107 @@
-# AuditSplit
+<p align="center">
+  <img src="apps/web/public/icon.png" alt="AuditSplit logo" width="140" />
+</p>
 
-**Pact before payout.**
+<h1 align="center">AuditSplit</h1>
 
-AuditSplit is an onchain payout agreement for collaborative bug bounty research, built for Monad. Researchers agree on immutable percentages before submitting a report; once everyone accepts, a dedicated vault can receive the reward and let each collaborator claim independently.
+<p align="center">
+  <strong>Pact before payout.</strong><br />
+  Immutable payout agreements for collaborative bug bounty research, built on Monad.
+</p>
 
-The vulnerability stays private. The chain receives only a salted `bytes32` commitment generated in the browser—never a report title, private platform ID, proof of concept, or exploit detail.
+<p align="center">
+  <a href="https://github.com/alva-p/spark-buildAnything-hackaton/actions/workflows/ci.yml"><img src="https://github.com/alva-p/spark-buildAnything-hackaton/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+</p>
 
-## The problem
+AuditSplit gives every private collaborative report its own payout vault. Researchers agree on exact shares before submission, every recipient accepts onchain, and each person claims independently when the bounty arrives.
 
-Collaborative findings are commonly submitted by one researcher and paid weeks later to one wallet. The eventual split is enforced through messages, spreadsheets, memory, and manual transfers. AuditSplit turns that informal promise into a small, auditable workflow created before the payout exists.
+Vulnerability details never go onchain. The browser sends only recipient addresses, shares, and a salted `bytes32` commitment.
+
+## Why it exists
+
+Collaborative bounties are often paid to one personal wallet and split later using messages, spreadsheets, and trust. AuditSplit replaces that manual promise with one immutable vault address accepted by everyone before payout.
 
 ## How it works
 
-1. The creator selects 2–10 wallet addresses and shares totaling exactly 100%.
-2. Every listed researcher accepts those exact terms onchain.
-3. The vault activates only after unanimous acceptance.
-4. It receives native MON or ERC-20 rewards and allocates the funds by the agreed shares.
-5. Every researcher claims their own balance independently.
+1. Create a vault with 2–10 recipients and shares totaling exactly 100%.
+2. Every recipient accepts the immutable pact.
+3. Give the active vault address to the bounty payer.
+4. The vault allocates the payment and each recipient claims independently.
 
-The final recipient receives any integer-rounding remainder, so every deposit is fully allocated. ERC-20 deposits use the amount actually received, including fee-on-transfer behavior. Funds transferred directly to an active vault can be accounted for once through synchronization functions.
+The contract uses pull-based claims: one recipient never needs to wait for, or depend on, another.
 
-## Current MVP
+## Hackathon MVP
 
-- Real factory deployment of one dedicated vault per report.
-- Immutable recipients, shares, and report commitment.
-- Unanimous activation and creator-only cancellation while pending.
-- Native MON and ERC-20 allocation with pull-based claims.
-- Browser-only salt generation and commitment hashing with viem.
-- Live `/create` transaction lifecycle with receipt-based `VaultCreated` parsing.
-- Live vault reads, recipient acceptance, Testnet MON deposits, claimable balances, and native claims.
-- Explicit wrong-network handling for Monad Testnet.
-- No backend, database, upgradeable proxy, admin withdrawal, or mocked transaction state.
+- Dedicated non-upgradeable vault for every report.
+- Unanimous activation and immutable shares.
+- Native MON and ERC-20 accounting, including fee-on-transfer tokens.
+- Real Monad transactions with pending, confirmed, and reverted states.
+- Browser-only commitment generation; no backend or database.
+- Responsive create, accept, payout, and claim flow.
+- 25 passing Foundry tests plus frontend lint and production build checks.
 
-ERC-20 interaction controls, cancellation controls, and indexed event history are intentionally outside the current frontend slice; the Solidity functionality is covered by tests.
+## Monad Testnet
 
-## Stack
+| Item | Deployment |
+|---|---|
+| Network | Monad Testnet · chain ID `10143` |
+| Frontend | Public deployment coming next |
+| Factory | [`0xe3335E3Ea2DbFe0aff7e92331f86AB3C53314536`](https://testnet.monadscan.com/address/0xe3335E3Ea2DbFe0aff7e92331f86AB3C53314536) |
+| Factory deployment | [`0x26b26f…5c891be`](https://testnet.monadscan.com/tx/0x26b26f52422aa2328c2a829dde594b6458ae6aedd6d5fa55d8f24cb6e5c891be) |
+| Deployer | [`0xB2ca5438D2C30624FC19c9206F41B550d4A502E8`](https://testnet.monadscan.com/address/0xB2ca5438D2C30624FC19c9206F41B550d4A502E8) |
+| Verified source | [`exact_match` on Sourcify](https://sourcify-api-monad.blockvision.org/v2/verify/472b0616-7ae6-4eb8-98a6-e111b5a8d014) |
 
-- Solidity 0.8.24, Foundry, OpenZeppelin v5
-- Next.js App Router and strict TypeScript
-- wagmi, viem, and TanStack Query
-- Monad Testnet (`chainId 10143`)
+The verified factory runtime bytecode matches the local build exactly.
 
-## Repository
+## Verified end-to-end demo
 
-```text
-.
-├── apps/web/       # Next.js application
-├── contracts/      # Solidity contracts, tests, and deployment script
-├── scripts/        # ABI export and create-flow verification helpers
-└── Makefile        # Combined verification commands
-```
+A live two-recipient payout completed successfully on Monad Testnet with a 75% / 25% split:
+
+| Step | Onchain evidence |
+|---|---|
+| Demo vault | [`0x6cD726…Fb8907`](https://testnet.monadscan.com/address/0x6cD726b6Ee769fC357a6843016593AEB45Fb8907) |
+| Vault creation | [`0x01be25…4cbbc2`](https://testnet.monadscan.com/tx/0x01be2597b268f971ff13bd3a6910f30181d29f583dbaca5f40cc07c4a94cbbc2) |
+| 1.4 MON payout | [`0xaaefa4…4b699`](https://testnet.monadscan.com/tx/0xaaefa48949cd5d15551330188c72880fe5a5c0d1c5bad784fc5baf7085f4b699) |
+| 25% claim · 0.35 MON | [`0xf91375…7a140`](https://testnet.monadscan.com/tx/0xf91375ccddd92ee328457c5e345868e00c6e0bdb035a61c651ed71876dd7a140) |
+| 75% claim · 1.05 MON | [`0xe3d5be…49bb9`](https://testnet.monadscan.com/tx/0xe3d5be23128a60fce02323b277350fee3f78514522984ff38cc5eb87cc449bb9) |
+
+Both recipients finished with zero claimable balance and the vault finished with zero MON held.
+
+## Security choices
+
+- Shares cannot change after creation.
+- Every recipient must accept before deposits are enabled.
+- Claims follow Checks-Effects-Interactions and use `ReentrancyGuard`.
+- ERC-20 transfers use `SafeERC20` and measured balance deltas.
+- No administrator can rewrite terms or withdraw user funds.
+- No report title, PoC, platform identifier, or vulnerability detail is stored onchain.
+
+This is hackathon software and has not received a production audit. Use it only on Monad Testnet.
 
 ## Run locally
 
 Requirements: Node.js 22+, npm, and Foundry.
 
-Install and test the contracts:
-
 ```bash
-cd contracts
-forge install --no-git OpenZeppelin/openzeppelin-contracts foundry-rs/forge-std
-forge fmt --check
-forge build
-forge test -vvv
-```
-
-Generate the frontend ABIs and start the web app:
-
-```bash
-cd ..
-node scripts/export-abis.mjs
-cd apps/web
-npm install
+git clone https://github.com/alva-p/spark-buildAnything-hackaton.git
+cd spark-buildAnything-hackaton/apps/web
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
-Configure `apps/web/.env.local`:
+The example environment already points to Monad Testnet and the deployed factory. Never add a private key to frontend environment files.
+
+## Verify the repository
 
 ```bash
-NEXT_PUBLIC_MONAD_RPC_URL=https://testnet-rpc.monad.xyz
-NEXT_PUBLIC_CHAIN_ID=10143
-NEXT_PUBLIC_FACTORY_ADDRESS=0xYOUR_DEPLOYED_FACTORY
-```
-
-Do not commit private keys or local environment files.
-
-## Verification
-
-```bash
-cd contracts && forge fmt --check && forge build && forge test -vvv
-cd ../apps/web && npm ci && npm run lint && npm run check:create && npm run build
-```
-
-The contract suite covers constructor validation, acceptance and cancellation restrictions, native and token allocation, direct-transfer synchronization, claims, deterministic rounding, fee-on-transfer tokens, and double-sync prevention.
-
-## Deploy to Monad Testnet
-
-Import a Foundry keystore instead of placing a private key in the repository or shell history:
-
-```bash
-cast wallet import monad-deployer
-
 cd contracts
-forge script script/Deploy.s.sol:DeployAuditSplit \
-  --rpc-url monad_testnet \
-  --account monad-deployer \
-  --broadcast
+forge install --no-git OpenZeppelin/openzeppelin-contracts foundry-rs/forge-std
+cd ..
+make verify
+npm run check:create --prefix apps/web
 ```
 
-After deployment, set the resulting factory address in the web environment, verify the source on the explorer, and test create → accept → fund → claim using faucet-issued Testnet MON.
+## Stack
 
-## Security model
-
-- Terms are immutable and vaults are non-upgradeable.
-- Activation requires every recipient; no administrator can override acceptance.
-- Claims follow checks-effects-interactions and use `ReentrancyGuard`.
-- ERC-20 transfers use `SafeERC20` and actual balance deltas.
-- Local labels and commitment metadata are conveniences only and never control funds.
-- A salted commitment protects casual disclosure, but users must still use a high-entropy random salt and keep private report information offchain.
-
-This is hackathon software and has not received a production audit. Use only Monad Testnet for the MVP.
-
-## Why Monad
-
-The product is naturally multi-step—create, accept, fund, and claim. Monad offers fast, inexpensive EVM-compatible confirmations while preserving familiar Solidity tooling, making the full agreement lifecycle practical to demonstrate onchain.
-
-## Links
-
-- [Monad documentation](https://docs.monad.xyz/)
-- [Monad Testnet explorer](https://testnet.monadscan.com/)
-- [Monad faucet](https://faucet.monad.xyz/)
+Solidity 0.8.24 · Foundry · OpenZeppelin v5 · Next.js · TypeScript · wagmi · viem · TanStack Query

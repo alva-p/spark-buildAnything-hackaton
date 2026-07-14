@@ -28,7 +28,13 @@ export function WalletButton() {
 
   if (isConnected && address) {
     return (
-      <button className="button button-wallet" onClick={() => disconnect()}>
+      <button
+        className="button button-wallet"
+        type="button"
+        title="Disconnect wallet"
+        aria-label={`Disconnect wallet ${address}`}
+        onClick={() => disconnect()}
+      >
         <span className="wallet-dot wallet-dot-connected" />
         {compactAddress(address)}
       </button>

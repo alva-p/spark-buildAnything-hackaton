@@ -32,6 +32,8 @@ export default function VaultPage() {
   const [confirmedAction, setConfirmedAction] = useState<Action>();
   const [handledHash, setHandledHash] = useState<Hash>();
   const [actionError, setActionError] = useState<string>();
+  const [addressCopied, setAddressCopied] = useState(false);
+  const [observedAllocations, setObservedAllocations] = useState<Record<string, string>>({});
 
   const {
     data,
@@ -109,10 +111,13 @@ export default function VaultPage() {
     isLoading: recipientClaimablesLoading,
     refetch: refetchRecipientClaimables,
   } = useReadContracts({
-      allowFailure: false,
-      contracts: claimableContracts,
-      query: { enabled: validAddress && claimableContracts.length > 0 },
-    });
+    allowFailure: false,
+    contracts: claimableContracts,
+    query: {
+      enabled: validAddress && claimableContracts.length > 0,
+      refetchInterval: 4_000,
+    },
+  });
   const {
     data: nativeClaimable,
     isLoading: nativeClaimableLoading,
@@ -123,7 +128,10 @@ export default function VaultPage() {
     functionName: "claimable",
     args: [zeroAddress, account ?? zeroAddress],
     chainId: monadTestnet.id,
-    query: { enabled: validAddress && Boolean(account) },
+    query: {
+      enabled: validAddress && Boolean(account),
+      refetchInterval: 4_000,
+    },
   });
 
   const {
@@ -144,10 +152,47 @@ export default function VaultPage() {
     try {
       const stored = localStorage.getItem(`auditsplit:vault:${vaultAddress.toLowerCase()}`);
       if (stored) setLocalLabel(JSON.parse(stored).label);
+      const payout = localStorage.getItem(`auditsplit:payout:${vaultAddress.toLowerCase()}`);
+      if (payout) {
+        const parsed = JSON.parse(payout) as Record<string, unknown>;
+        setObservedAllocations(
+          Object.fromEntries(
+            Object.entries(parsed).filter(
+              ([, value]) => typeof value === "string" && /^\d+$/.test(value),
+            ),
+          ) as Record<string, string>,
+        );
+      }
     } catch {
       setLocalLabel(undefined);
+      setObservedAllocations({});
     }
   }, [validAddress, vaultAddress]);
+
+  useEffect(() => {
+    if (!recipients || !recipientClaimables) return;
+
+    setObservedAllocations((current) => {
+      const next = { ...current };
+      let changed = false;
+
+      recipients.forEach((recipient, index) => {
+        const amount = recipientClaimables[index] ?? BigInt(0);
+        const key = recipient.toLowerCase();
+        if (amount > BigInt(0) && next[key] !== amount.toString()) {
+          next[key] = amount.toString();
+          changed = true;
+        }
+      });
+
+      if (!changed) return current;
+      localStorage.setItem(
+        `auditsplit:payout:${vaultAddress.toLowerCase()}`,
+        JSON.stringify(next),
+      );
+      return next;
+    });
+  }, [recipientClaimables, recipients, vaultAddress]);
 
   useEffect(() => {
     if (!receipt || receipt.transactionHash === handledHash) return;
@@ -182,6 +227,51 @@ export default function VaultPage() {
     (confirmationError || writeError
       ? transactionErrorMessage(confirmationError ?? writeError)
       : undefined);
+  const statusName = statuses[statusNumber] ?? "Unknown";
+  const recipientStates = (recipients ?? []).map((recipient, index) => {
+    const claimable = recipientClaimables?.[index] ?? BigInt(0);
+    const observed = BigInt(observedAllocations[recipient.toLowerCase()] ?? "0");
+    return {
+      claimable,
+      observed,
+      claimed: observed > BigInt(0) && claimable === BigInt(0),
+    };
+  });
+  const hasObservedPayout = recipientStates.some(
+    ({ claimable, observed }) => claimable > BigInt(0) || observed > BigInt(0),
+  );
+  const claimedCount = recipientStates.filter(({ claimed }) => claimed).length;
+  const splitComplete =
+    recipientStates.length > 0 &&
+    recipientStates.every(({ claimed }) => claimed);
+  const remainingAcceptances = Math.max(
+    (recipients?.length ?? 0) - Number(acceptedCount ?? 0),
+    0,
+  );
+  const nextStepTitle = statusNumber === 0
+    ? !isConnected
+      ? "Connect a recipient wallet to continue"
+      : isRecipient && !hasAccepted
+        ? "Your acceptance is required"
+        : `Waiting for ${remainingAcceptances} recipient${remainingAcceptances === 1 ? "" : "s"}`
+    : statusNumber === 1
+      ? splitComplete
+        ? "Split successful"
+        : nativeClaimable
+          ? "Your share is ready to claim"
+          : hasObservedPayout
+            ? `${claimedCount} of ${recipients?.length ?? 0} shares claimed`
+            : "Share this payout address"
+      : "This payout pact is closed";
+  const nextStepCopy = statusNumber === 0
+    ? "The vault activates only after every listed recipient accepts the immutable split."
+    : statusNumber === 1
+      ? splitComplete
+        ? "Every recipient received their agreed share. Thanks for using AuditSplit."
+        : hasObservedPayout
+          ? "The payout is allocated. Each remaining recipient can claim independently."
+          : "Give this vault address to the bounty platform. Any MON it sends here is allocated by the accepted split."
+      : "Cancelled vaults cannot accept deposits or reactivate.";
 
   function prepareAction(nextAction: Action) {
     resetWrite();
@@ -228,6 +318,15 @@ export default function VaultPage() {
     });
   }
 
+  async function copyVaultAddress() {
+    try {
+      await navigator.clipboard.writeText(vaultAddress);
+      setAddressCopied(true);
+    } catch {
+      setActionError("Could not copy the vault address. Copy it from the explorer link instead.");
+    }
+  }
+
   return (
     <>
       <SiteHeader />
@@ -236,17 +335,16 @@ export default function VaultPage() {
       <section className="create-heading vault-heading">
         <div className="eyebrow">PAYOUT VAULT · LIVE MONAD STATE</div>
         <h1>{localLabel || "Vault case file."}</h1>
-        <p className="hero-copy mono-copy">
-          {validAddress ? (
-            <a
-              href={`${monadTestnet.blockExplorers.default.url}/address/${vaultAddress}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {vaultAddress}
-            </a>
-          ) : params.address}
-        </p>
+        {validAddress ? (
+          <a
+            className="mono-copy"
+            href={`${monadTestnet.blockExplorers.default.url}/address/${vaultAddress}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            View vault on Monadscan ↗
+          </a>
+        ) : params.address}
       </section>
 
       {!validAddress ? (
@@ -261,106 +359,148 @@ export default function VaultPage() {
         <section className="case-panel create-panel">
           <div className="case-header">
             <span>AGREEMENT STATE</span>
-            <span className={statusNumber === 1 ? "status-dot" : ""}>
-              {statuses[statusNumber] ?? "Unknown"}
+            <span className={`status-pill status-${statusName.toLowerCase()}`}>
+              {statusName}
             </span>
           </div>
 
-          <div className="review-summary vault-summary">
-            <div>
-              <span className="field-label">CREATOR</span>
-              <code>{creator}</code>
+          <div className="vault-lifecycle" aria-label="Payout lifecycle">
+            <div className="lifecycle-step lifecycle-complete">
+              <span>01</span>
+              <div><strong>Pact created</strong><small>Terms locked</small></div>
             </div>
-            <div>
-              <span className="field-label">ACCEPTANCE</span>
-              <strong>{Number(acceptedCount)} / {recipients?.length ?? 0}</strong>
+            <div className={`lifecycle-step${statusNumber === 0 ? " lifecycle-current" : statusNumber === 1 ? " lifecycle-complete" : ""}`}>
+              <span>02</span>
+              <div><strong>Accepted</strong><small>{Number(acceptedCount)} / {recipients?.length ?? 0} recipients</small></div>
             </div>
-            <div className="wide-field">
-              <span className="field-label">REPORT COMMITMENT</span>
-              <code>{commitment}</code>
+            <div className={`lifecycle-step${statusNumber === 1 ? hasObservedPayout ? " lifecycle-complete" : " lifecycle-current" : ""}`}>
+              <span>03</span>
+              <div><strong>Payout</strong><small>One vault address</small></div>
+            </div>
+            <div className={`lifecycle-step${splitComplete ? " lifecycle-complete" : hasObservedPayout ? " lifecycle-current" : ""}`}>
+              <span>04</span>
+              <div><strong>Claim</strong><small>{splitComplete ? "Split complete" : "Each share independently"}</small></div>
             </div>
           </div>
 
-          <div className="case-header section-divider">
-            <span>LIVE ACTIONS</span>
-            <span>TESTNET MON · NO REAL VALUE</span>
-          </div>
-          <div className="vault-actions">
-            <article className="action-card">
-              <span className="field-label">01 · ACCEPT PACT</span>
-              <strong>
-                {!isConnected
-                  ? "Connect a recipient wallet"
-                  : !isRecipient
-                    ? "Connected wallet is not a recipient"
-                    : hasAccepted
-                      ? "Agreement accepted"
-                      : "Review the immutable split, then accept"}
-              </strong>
-              <button
-                className="button button-primary"
-                type="button"
-                disabled={
-                  busy ||
-                  wrongNetwork ||
-                  statusNumber !== 0 ||
-                  !isRecipient ||
-                  hasAccepted ||
-                  acceptancesLoading
-                }
-                onClick={acceptAgreement}
-              >
-                {isWalletPending && action === "accept" ? "Confirm in wallet…" : "Accept agreement"}
-              </button>
-            </article>
+          <div className="primary-action" aria-live="polite">
+            <div className="primary-action-copy">
+              <span className="field-label">YOUR NEXT ACTION</span>
+              <h2>{nextStepTitle}</h2>
+              <p>{nextStepCopy}</p>
+            </div>
 
-            <article className="action-card">
-              <span className="field-label">02 · FUND VAULT</span>
-              <label>
-                <span>Testnet MON amount</span>
-                <input
-                  inputMode="decimal"
-                  value={depositAmount}
-                  disabled={statusNumber !== 1}
-                  onChange={(event) => setDepositAmount(event.target.value)}
-                />
-              </label>
-              <button
-                className="button button-primary"
-                type="button"
-                disabled={busy || wrongNetwork || !isConnected || statusNumber !== 1}
-                onClick={depositNative}
-              >
-                {isWalletPending && action === "deposit" ? "Confirm in wallet…" : "Deposit test MON"}
-              </button>
-              <a href="https://faucet.monad.xyz/" target="_blank" rel="noreferrer">
-                Get Testnet MON from the official faucet ↗
-              </a>
-            </article>
+            {statusNumber === 0 && (
+              <div className="primary-action-control">
+                <span className="muted-copy">
+                  {!isConnected
+                    ? "Only listed recipients can accept."
+                    : !isRecipient
+                      ? "The connected wallet is not a recipient."
+                      : hasAccepted
+                        ? "Your wallet already accepted."
+                        : "Review the recipients and shares below before signing."}
+                </span>
+                <button
+                  className="button button-primary"
+                  type="button"
+                  disabled={busy || wrongNetwork || !isRecipient || hasAccepted || acceptancesLoading}
+                  onClick={acceptAgreement}
+                >
+                  {isWalletPending && action === "accept"
+                    ? "Confirm in wallet…"
+                    : isConfirming && action === "accept"
+                      ? "Confirming on Monad…"
+                      : "Accept agreement"}
+                </button>
+              </div>
+            )}
 
-            <article className="action-card claim-card">
-              <span className="field-label">03 · YOUR CLAIM</span>
-              <strong className="claim-amount">
-                {!isConnected
-                  ? "Connect wallet"
-                  : nativeClaimableLoading
-                    ? "Reading…"
-                    : `${formatEther(nativeClaimable ?? BigInt(0))} MON`}
-              </strong>
-              <span className="muted-copy">Claiming does not affect any other recipient.</span>
-              <button
-                className="button button-primary"
-                type="button"
-                disabled={busy || wrongNetwork || !isConnected || !nativeClaimable}
-                onClick={claimNative}
-              >
-                {isWalletPending && action === "claim" ? "Confirm in wallet…" : "Claim test MON"}
-              </button>
-            </article>
+            {statusNumber === 1 && splitComplete && (
+              <div className="split-success" role="status">
+                <span className="split-success-mark" aria-hidden="true">✓</span>
+                <div>
+                  <span className="field-label">ALL CLAIMS CONFIRMED</span>
+                  <strong>Split successful</strong>
+                  <small>Funds reached every recipient.</small>
+                </div>
+              </div>
+            )}
+
+            {statusNumber === 1 && !splitComplete && hasObservedPayout && (
+              <div className="claim-panel">
+                <div
+                  className="claim-progress"
+                  role="progressbar"
+                  aria-label={`${claimedCount} of ${recipients?.length ?? 0} recipients claimed`}
+                  aria-valuemin={0}
+                  aria-valuemax={recipients?.length ?? 0}
+                  aria-valuenow={claimedCount}
+                >
+                  <strong>{claimedCount}/{recipients?.length ?? 0}</strong>
+                  <span>recipients claimed</span>
+                  <span className="claim-progress-track" aria-hidden="true">
+                    <span style={{ width: `${(claimedCount / (recipients?.length || 1)) * 100}%` }} />
+                  </span>
+                </div>
+
+                {nativeClaimable ? (
+                  <div className="primary-action-control">
+                    <strong className="claim-amount">
+                      {nativeClaimableLoading ? "Reading…" : `${formatEther(nativeClaimable)} MON`}
+                    </strong>
+                    <span className="muted-copy">Your claim does not block the other recipient.</span>
+                    <button
+                      className="button button-primary"
+                      type="button"
+                      disabled={busy || wrongNetwork || !isConnected}
+                      onClick={claimNative}
+                    >
+                      {isWalletPending && action === "claim"
+                        ? "Confirm in wallet…"
+                        : isConfirming && action === "claim"
+                          ? "Confirming on Monad…"
+                          : "Claim MON"}
+                    </button>
+                  </div>
+                ) : (
+                  <span className="muted-copy">Waiting for the remaining recipient wallets to claim.</span>
+                )}
+              </div>
+            )}
+
+            {statusNumber === 1 && !nativeClaimable && !hasObservedPayout && (
+              <div className="primary-action-control payout-control">
+                <span className="field-label">COPY THIS ADDRESS</span>
+                <code className="payout-address">{vaultAddress}</code>
+                <button className="button button-primary" type="button" onClick={copyVaultAddress}>
+                  {addressCopied ? "Payout address copied" : "Copy payout address"}
+                </button>
+                <span className="muted-copy">The bounty payer sends MON here. Recipients do not fund the vault.</span>
+              </div>
+            )}
+
+            {statusNumber === 2 && (
+              <div className="primary-action-control">
+                <span className="danger-text">No further actions are available for this vault.</span>
+              </div>
+            )}
           </div>
+
+          {statusNumber === 1 && nativeClaimable && (
+            <div className="payout-reference">
+              <div>
+                <span className="field-label">PAYOUT ADDRESS</span>
+                <code>{vaultAddress}</code>
+              </div>
+              <button className="button button-secondary" type="button" onClick={copyVaultAddress}>
+                {addressCopied ? "Copied" : "Copy address"}
+              </button>
+            </div>
+          )}
 
           <div className="transaction-strip" aria-live="polite">
-            {!isConnected && <span>Connect a wallet to use vault actions.</span>}
+            {!isConnected && <span>Connect a wallet to accept, simulate a payout, or claim.</span>}
             {wrongNetwork && (
               <>
                 <span className="danger-text">Switch to Monad Testnet before signing.</span>
@@ -390,7 +530,7 @@ export default function VaultPage() {
             )}
             {confirmedAction && (
               <span className="status-dot">
-                Confirmed · {confirmedAction === "accept" ? "agreement accepted" : confirmedAction === "deposit" ? "funds allocated" : "claim completed"}.
+                Confirmed · {confirmedAction === "accept" ? "agreement accepted" : confirmedAction === "deposit" ? "test bounty allocated" : "claim completed"}.
               </span>
             )}
             {transactionError && <span className="danger-text">{transactionError}</span>}
@@ -403,32 +543,107 @@ export default function VaultPage() {
           <div className="review-recipients">
             {recipients?.map((recipient, index) => {
               const accepted = statusNumber === 1 || Boolean(acceptances?.[index]);
+              const recipientState = recipientStates[index];
               return (
-                <div className="review-recipient vault-recipient" key={recipient}>
-                  <code>{recipient}</code>
+                <div
+                  className={`review-recipient vault-recipient${recipientState?.claimed ? " vault-recipient-claimed" : ""}`}
+                  key={recipient}
+                >
+                  <div className="recipient-identity">
+                    <code>{recipient}</code>
+                    <span className="share-track" aria-hidden="true">
+                      <span style={{ width: `${Number(shares?.[index]) / 100}%` }} />
+                    </span>
+                  </div>
                   <strong>{(Number(shares?.[index]) / 100).toFixed(2)}%</strong>
                   <span>
                     {recipientClaimablesLoading
                       ? "READING…"
-                      : `${formatEther(recipientClaimables?.[index] ?? BigInt(0))} MON`}
+                      : recipientState?.claimed
+                        ? `${formatEther(recipientState.observed)} MON CLAIMED`
+                        : `${formatEther(recipientState?.claimable ?? BigInt(0))} MON`}
                   </span>
-                  <span className={accepted ? "status-dot" : ""}>
+                  <span className={`recipient-status${accepted ? " recipient-status-accepted" : ""}${recipientState?.claimable ? " recipient-status-ready" : ""}${recipientState?.claimed ? " recipient-status-claimed" : ""}`}>
                     {statusNumber !== 1 && acceptancesLoading
                       ? "READING…"
-                      : accepted
-                        ? "ACCEPTED"
-                        : "PENDING"}
+                      : recipientState?.claimed
+                        ? "CLAIMED ✓"
+                        : recipientState?.claimable
+                          ? "CLAIM READY"
+                          : accepted
+                            ? "ACCEPTED"
+                            : "PENDING"}
                   </span>
                 </div>
               );
             })}
           </div>
+
+          <details className="agreement-details">
+            <summary>
+              <span>AGREEMENT DETAILS</span>
+              <span>Creator and private report commitment</span>
+            </summary>
+            <div className="review-summary vault-summary">
+              <div>
+                <span className="field-label">CREATOR</span>
+                <code>{creator}</code>
+              </div>
+              <div>
+                <span className="field-label">ACCEPTANCE</span>
+                <strong>{Number(acceptedCount)} / {recipients?.length ?? 0}</strong>
+              </div>
+              <div className="wide-field">
+                <span className="field-label">REPORT COMMITMENT</span>
+                <code>{commitment}</code>
+              </div>
+            </div>
+          </details>
+
+          {statusNumber === 1 && (
+            <details className="demo-tools">
+              <summary>
+                <span>DEMO TOOLS</span>
+                <span>Simulate the external bounty payer</span>
+              </summary>
+              <div className="demo-tools-content">
+                <p className="demo-tools-note">
+                  Fund the connected payer wallet first. Do not request faucet MON directly to the
+                  vault: batch faucet transfers can fail for contract addresses.
+                </p>
+                <a href="https://faucet.monad.xyz/" target="_blank" rel="noreferrer">
+                  1 · Fund payer wallet ↗
+                </a>
+                <label>
+                  <span>2 · Bounty amount</span>
+                  <input
+                    inputMode="decimal"
+                    value={depositAmount}
+                    onChange={(event) => setDepositAmount(event.target.value)}
+                  />
+                </label>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  disabled={busy || wrongNetwork || !isConnected}
+                  onClick={depositNative}
+                >
+                  {isWalletPending && action === "deposit"
+                    ? "Confirm in wallet…"
+                    : isConfirming && action === "deposit"
+                      ? "Confirming on Monad…"
+                      : "3 · Send payout to vault"}
+                </button>
+              </div>
+            </details>
+          )}
         </section>
       )}
 
       <p className="privacy-note">
-        All balances and transaction states above come directly from Monad Testnet. Testnet MON is
-        for development only and has no real-world value.
+        Current balances and transaction states come directly from Monad Testnet. Once observed,
+        completed claim amounts are preserved only in this browser for the payout receipt. Testnet
+        MON is for development only and has no real-world value.
       </p>
       </main>
     </>

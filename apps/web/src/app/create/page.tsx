@@ -50,6 +50,14 @@ export default function CreateVaultPage() {
     (total, row) => total + (percentageToBps(row.percentage) ?? 0),
     0,
   );
+  const formReady = Boolean(label.trim() && privateReportId.trim() && split);
+  const formMessage = !label.trim()
+    ? "Add a friendly label stored only in this browser."
+    : !privateReportId.trim()
+      ? "Add the private report ID used only to generate the commitment."
+      : typeof validation === "string"
+        ? validation
+        : "Agreement input is valid and totals exactly 100%.";
   const commitment = useMemo(
     () =>
       salt && privateReportId.trim()
@@ -168,36 +176,60 @@ export default function CreateVaultPage() {
         <div className="eyebrow">CASE INTAKE · NEW PAYOUT PACT</div>
         <h1>Create vault.</h1>
         <p className="hero-copy">
-          Lock exact collaborator shares before report submission. Only a salted commitment and
-          payout terms reach Monad.
+          Lock exact collaborator shares before submission. Once everyone accepts, this vault
+          becomes the payout address you give to the bounty platform.
         </p>
+        <div className="create-flow-note">
+          <span className="field-label">AFTER CREATION</span>
+          <strong>Accept pact → share vault address → receive bounty → claim</strong>
+        </div>
       </section>
 
       {!reviewing ? (
         <section className="case-panel create-panel">
           <div className="case-header">
-            <span>01 · AGREEMENT DETAILS</span>
-            <span>LOCAL INPUT</span>
+            <span>01 · REPORT DETAILS</span>
+            <span>PRIVATE · BROWSER ONLY</span>
           </div>
 
           <div className="form-section two-column-fields">
             <label>
-              <span>Friendly label · stored locally</span>
-              <input value={label} onChange={(event) => setLabel(event.target.value)} placeholder="Oracle review pact" />
+              <span>Vault name</span>
+              <input
+                aria-describedby="vault-name-help"
+                value={label}
+                onChange={(event) => setLabel(event.target.value)}
+                placeholder="Oracle collaboration"
+              />
+              <small className="field-help" id="vault-name-help">
+                A name to recognize this vault. Saved only in this browser.
+              </small>
             </label>
             <label>
-              <span>Platform · commitment input, not stored</span>
-              <input value={platform} onChange={(event) => setPlatform(event.target.value)} placeholder="Immunefi" />
+              <span>Bounty platform</span>
+              <input
+                aria-describedby="platform-help"
+                value={platform}
+                onChange={(event) => setPlatform(event.target.value)}
+                placeholder="Immunefi"
+              />
+              <small className="field-help" id="platform-help">
+                Where you plan to submit the report.
+              </small>
             </label>
             <label className="wide-field">
-              <span>Private report ID · commitment input, not stored</span>
+              <span>Private report reference</span>
               <input
+                aria-describedby="report-reference-help"
                 type="password"
                 autoComplete="off"
                 value={privateReportId}
                 onChange={(event) => setPrivateReportId(event.target.value)}
-                placeholder="Never sent or persisted"
+                placeholder="e.g. report-12345"
               />
+              <small className="field-help" id="report-reference-help">
+                A private report or case ID. Used to create the onchain fingerprint, then kept offchain.
+              </small>
             </label>
           </div>
 
@@ -254,9 +286,14 @@ export default function CreateVaultPage() {
 
           <div className="form-footer">
             <p className={formError ? "form-message error-message" : "form-message"} aria-live="polite">
-              {formError ?? (typeof validation === "string" ? validation : "Agreement input is valid.")}
+              {formError ?? formMessage}
             </p>
-            <button className="button button-primary" type="button" onClick={openReview}>
+            <button
+              className="button button-primary"
+              type="button"
+              disabled={!formReady}
+              onClick={openReview}
+            >
               Review exact pact
             </button>
           </div>
@@ -274,8 +311,9 @@ export default function CreateVaultPage() {
               <strong>{label}</strong>
             </div>
             <div>
-              <span className="field-label">NETWORK</span>
+              <span className="field-label">NETWORK · VERIFIED FACTORY</span>
               <strong>Monad Testnet · {monadTestnet.id}</strong>
+              <code>{factoryAddress}</code>
             </div>
             <div className="wide-field">
               <span className="field-label">REPORT COMMITMENT · ONCHAIN</span>
