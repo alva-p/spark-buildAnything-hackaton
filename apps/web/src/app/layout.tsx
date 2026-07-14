@@ -1,28 +1,29 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Inter, Roboto_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  variable: "--font-inter",
 });
 
-const jetBrainsMono = JetBrains_Mono({
+const robotoMono = Roboto_Mono({
   subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
+  variable: "--font-roboto-mono",
 });
 
 export const metadata: Metadata = {
   title: "AuditSplit — Pact before payout",
   description: "Onchain payout agreements for collaborative bug bounty reports.",
+  icons: { icon: "/icon.png" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${spaceGrotesk.variable} ${jetBrainsMono.variable}`}>
+      <body className={`${inter.variable} ${robotoMono.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>
