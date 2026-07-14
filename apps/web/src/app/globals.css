@@ -272,6 +272,7 @@ input:focus-visible {
   display: flex;
   margin-top: 32px;
   align-items: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 18px;
 }
@@ -282,23 +283,13 @@ input:focus-visible {
   border-radius: 10px;
 }
 
-.text-link {
-  padding-bottom: 2px;
-  border-bottom: 1px solid var(--line);
-  color: var(--accent-soft);
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.text-link:hover {
-  border-color: var(--accent-bright);
-}
-
 .deployment-proof {
-  display: inline-flex;
-  margin-top: 24px;
+  display: flex;
+  width: fit-content;
+  margin: 24px 0 0;
   padding: 9px 12px;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -346,6 +337,19 @@ input:focus-visible {
   content: "";
 }
 
+.payout-route .case-header {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.payout-route .case-header > span:first-child {
+  color: var(--text);
+  font-family: "Britti Sans", var(--font-inter), system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
 .case-header {
   display: flex;
   min-height: 48px;
@@ -391,8 +395,7 @@ label > span {
   text-transform: uppercase;
 }
 
-.step p,
-.privacy-strip p {
+.step p {
   color: var(--muted);
   line-height: 1.55;
 }
@@ -404,36 +407,54 @@ label > span {
 
 .route-stop {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
+  gap: 10px;
+  padding: 18px 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: rgba(11, 7, 18, 0.42);
+  text-align: center;
 }
 
 .route-stop > div,
 .route-claims > div {
   display: grid;
+  justify-items: center;
   gap: 4px;
+  text-align: center;
 }
 
 .route-stop strong,
 .route-claims strong {
-  font-size: 14px;
+  font-family: "Britti Sans", var(--font-inter), system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 750;
 }
 
 .route-index {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 52px;
+  height: 52px;
   flex: none;
   place-items: center;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 50%;
+  background: rgba(110, 84, 255, 0.1);
   color: var(--accent-soft);
   font-family: var(--font-roboto-mono), monospace;
-  font-size: 10px;
+}
+
+.route-index > span {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.route-index small {
+  margin-top: -7px;
+  font-size: 8px;
+  font-weight: 700;
 }
 
 .route-vault {
@@ -448,10 +469,11 @@ label > span {
 }
 
 .route-connector {
-  height: 22px;
-  padding-left: 28px;
+  height: 26px;
   color: var(--accent-soft);
-  line-height: 22px;
+  font-size: 18px;
+  line-height: 26px;
+  text-align: center;
 }
 
 .route-claims {
@@ -461,64 +483,88 @@ label > span {
 }
 
 .route-claims > div {
-  padding: 13px;
+  padding: 15px 12px;
   border: 1px solid var(--line);
   border-radius: 9px;
   background: rgba(11, 7, 18, 0.42);
 }
 
+.route-claim-icon {
+  margin-bottom: 2px;
+  font-size: 22px;
+}
+
 .route-footer {
   display: grid;
   padding: 14px 20px 18px;
+  justify-items: center;
   gap: 4px;
   border-top: 1px solid var(--line);
+  text-align: center;
 }
 
 .route-footer strong {
-  font-size: 12px;
+  font-family: "Britti Sans", var(--font-inter), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .steps-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 0;
   padding: 16px 0 64px;
 }
 
 .step {
-  min-height: 174px;
-  padding: 22px 20px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
-  transition: border-color 150ms, transform 150ms;
+  position: relative;
+  min-width: 0;
+  padding: 18px 34px 22px 0;
 }
 
-.step:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
+.step + .step {
+  padding-left: 26px;
+}
+
+.step:not(:last-child)::after {
+  position: absolute;
+  top: 25px;
+  right: 10px;
+  color: var(--accent-bright);
+  content: "→";
+  font-size: 18px;
 }
 
 .step-heading {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
 }
 
 .step-number {
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 600;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  background: rgba(110, 84, 255, 0.12);
+  color: var(--accent-soft);
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .step h2 {
   margin: 0;
-  font-size: 17px;
+  font-size: 19px;
+  font-weight: 750;
 }
 
 .step p {
-  margin: 14px 0 0;
-  font-size: 13.5px;
+  margin: 13px 0 0 48px;
+  font-size: 12.5px;
 }
 
 .split-history {
@@ -568,34 +614,40 @@ label > span {
 
 .history-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(21, 16, 32, 0.65);
 }
 
 .history-card {
   display: grid;
+  grid-template-columns: minmax(170px, 0.75fr) minmax(250px, 1.1fr) minmax(220px, 1fr) auto;
+  grid-template-areas: "title address recipients open";
   min-width: 0;
-  padding: 20px;
-  gap: 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
+  padding: 14px 18px;
+  align-items: center;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
   color: var(--text);
-  transition: border-color 150ms, transform 150ms, box-shadow 150ms;
+  transition: background 150ms;
+}
+
+.history-card:last-child {
+  border-bottom: 0;
 }
 
 .history-card:hover {
-  border-color: var(--accent);
+  background: rgba(110, 84, 255, 0.1);
   color: var(--text);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
-  transform: translateY(-2px);
 }
 
 .history-card-top {
+  grid-area: title;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
 }
 
 .history-card-top > div {
@@ -606,30 +658,32 @@ label > span {
 
 .history-card-top strong {
   overflow: hidden;
-  font-size: 17px;
+  font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .history-card > code {
+  grid-area: address;
   overflow-wrap: anywhere;
   color: var(--accent-soft);
-  font-size: 11px;
+  font-size: 10.5px;
 }
 
 .history-recipients {
-  display: grid;
-  gap: 7px;
+  grid-area: recipients;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px 14px;
 }
 
 .history-recipients > span {
-  display: flex;
-  padding-top: 7px;
-  justify-content: space-between;
-  gap: 12px;
-  border-top: 1px solid rgba(55, 43, 76, 0.65);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10.5px;
 }
 
 .history-recipients code {
@@ -641,9 +695,11 @@ label > span {
 }
 
 .history-open {
+  grid-area: open;
   color: var(--accent-soft);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .history-note {
@@ -651,57 +707,6 @@ label > span {
   color: var(--muted);
   font-size: 10.5px;
   line-height: 1.5;
-}
-
-.privacy-strip {
-  position: relative;
-  display: flex;
-  margin-bottom: 80px;
-  padding: 22px 24px;
-  align-items: flex-start;
-  gap: 16px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel-strong);
-}
-
-.privacy-strip::before {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 2px;
-  background: linear-gradient(var(--accent), rgba(110, 84, 255, 0.1));
-  content: "";
-}
-
-.privacy-icon {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  flex: none;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: rgba(110, 84, 255, 0.12);
-  color: var(--accent-bright);
-  font-family: var(--font-roboto-mono), monospace;
-}
-
-.privacy-strip > div {
-  display: grid;
-  gap: 5px;
-}
-
-.privacy-strip strong {
-  margin-top: 2px;
-  font-size: 16px;
-}
-
-.privacy-strip p {
-  margin: 0;
-  font-size: 14px;
 }
 
 .site-footer {
@@ -718,6 +723,22 @@ label > span {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+
+.footer-links a {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.footer-links a:hover {
+  color: var(--accent-soft);
 }
 
 .create-shell {
@@ -1448,10 +1469,19 @@ code {
 
   .steps-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 10px;
   }
 
-  .history-list {
-    grid-template-columns: 1fr;
+  .step:nth-child(2)::after {
+    display: none;
+  }
+
+  .history-card {
+    grid-template-columns: minmax(170px, 0.75fr) minmax(220px, 1fr) auto;
+    grid-template-areas:
+      "title address open"
+      "recipients recipients recipients";
+    row-gap: 10px;
   }
 
   .vault-lifecycle {
@@ -1515,8 +1545,9 @@ code {
   }
 
   .deployment-proof {
-    align-items: flex-start;
+    align-items: center;
     flex-direction: column;
+    text-align: center;
   }
 
   .steps-grid {
@@ -1526,10 +1557,25 @@ code {
 
   .step {
     min-height: auto;
+    padding: 12px 0 20px;
   }
 
-  .privacy-strip {
-    margin-bottom: 48px;
+  .step + .step {
+    padding-left: 0;
+  }
+
+  .step:not(:last-child)::after {
+    display: none;
+  }
+
+  .history-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title title"
+      "address open"
+      "recipients recipients";
+    padding: 14px;
+    gap: 10px 14px;
   }
 
   .history-heading {

@@ -89,11 +89,8 @@ export default function Home() {
             </p>
             <div className="hero-actions">
               <Link className="button button-primary button-link" href="/create">
-                Create payout vault <span aria-hidden="true">→</span>
+                Create payout vault
               </Link>
-              <a className="text-link" href="#workflow">
-                See the payout flow ↓
-              </a>
             </div>
             {factoryAddress && (
               <a
@@ -116,7 +113,10 @@ export default function Home() {
             </div>
             <div className="route-body">
               <div className="route-stop">
-                <span className="route-index">01</span>
+                <span className="route-index">
+                  <span aria-hidden="true">🏆</span>
+                  <small>01</small>
+                </span>
                 <div>
                   <span className="field-label">BOUNTY PAYER</span>
                   <strong>Platform sends one payment</strong>
@@ -124,7 +124,10 @@ export default function Home() {
               </div>
               <span className="route-connector" aria-hidden="true">↓</span>
               <div className="route-stop route-vault">
-                <span className="route-index">02</span>
+                <span className="route-index">
+                  <span aria-hidden="true">🔐</span>
+                  <small>02</small>
+                </span>
                 <div>
                   <span className="field-label">UNIQUE VAULT ADDRESS</span>
                   <strong>Contract locks the accepted split</strong>
@@ -134,10 +137,12 @@ export default function Home() {
               <span className="route-connector" aria-hidden="true">↓</span>
               <div className="route-claims">
                 <div>
+                  <span className="route-claim-icon" aria-hidden="true">🧑‍💻</span>
                   <span className="field-label">RESEARCHER A</span>
                   <strong>Claims own share</strong>
                 </div>
                 <div>
+                  <span className="route-claim-icon" aria-hidden="true">👩‍💻</span>
                   <span className="field-label">RESEARCHER B</span>
                   <strong>Claims independently</strong>
                 </div>
@@ -226,20 +231,17 @@ export default function Home() {
           </p>
         </section>
 
-        <section className="privacy-strip">
-          <span className="privacy-icon" aria-hidden="true">◆</span>
-          <div>
-            <span className="field-label">PRIVACY GUARANTEE</span>
-            <strong>No vulnerability details onchain.</strong>
-            <p>Only a salted report commitment, recipient addresses and payout terms are stored.</p>
-          </div>
-        </section>
       </main>
 
       <footer className="site-footer">
         <div>
-          <span>AUDITSPLIT — ONCHAIN PAYOUT PACTS</span>
-          <span>Testnet MON has no real value.</span>
+          <span>AUDITSPLIT — BUILT BY ALVA-P</span>
+          <nav className="footer-links" aria-label="Álvaro Pineda links">
+            <a href="https://github.com/alva-p" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://www.linkedin.com/in/%C3%A1lvaro-pineda/" target="_blank" rel="noreferrer">LinkedIn</a>
+            <a href="https://x.com/pimmpi_" target="_blank" rel="noreferrer">X / Twitter</a>
+            <a href="mailto:alvaropineda1017@gmail.com">Email</a>
+          </nav>
         </div>
       </footer>
     </>
