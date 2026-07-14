@@ -1,0 +1,32 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+CLAUDE.local.md
+
+# Node
+node_modules/
+.next/
+dist/
+npm-debug.log*
+
+# Foundry
+contracts/cache/
+contracts/out/
+contracts/broadcast/
+contracts/lib/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Local agent output
+.codex-log/
+
+# Internal planning and agent context (kept locally, not published)
+*.md
+!/README.md
+docs/
+prompts/
+.claude/
