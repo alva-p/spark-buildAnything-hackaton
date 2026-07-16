@@ -1,9 +1,6 @@
-import { getAddress, isAddress, type Address } from "viem";
+import { getAddress, type Address } from "viem";
 export { factoryAbi, vaultAbi } from "@/generated/abis";
 
-const configuredAddress = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
-
-export const factoryAddress: Address | undefined =
-  configuredAddress && isAddress(configuredAddress)
-    ? getAddress(configuredAddress)
-    : undefined;
+export const factoryAddress: Address = getAddress(
+  "0x0ccbe83afD8423baE0094857B3D97cAec9B52D0C",
+);

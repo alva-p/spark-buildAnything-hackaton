@@ -14,7 +14,7 @@ import {
 import { SiteHeader } from "@/components/site-header";
 import { vaultAbi } from "@/lib/contracts";
 import { transactionErrorMessage } from "@/lib/errors";
-import { monadTestnet } from "@/lib/monad";
+import { monadMainnet } from "@/lib/monad";
 import { parseMonAmount } from "@/lib/vault";
 
 const statuses = ["Pending", "Active", "Cancelled"] as const;
@@ -27,7 +27,7 @@ export default function VaultPage() {
   const { address: account, chainId, isConnected } = useAccount();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const [localLabel, setLocalLabel] = useState<string>();
-  const [depositAmount, setDepositAmount] = useState("0.1");
+  const [depositAmount, setDepositAmount] = useState("");
   const [action, setAction] = useState<Action>();
   const [confirmedAction, setConfirmedAction] = useState<Action>();
   const [handledHash, setHandledHash] = useState<Hash>();
@@ -43,31 +43,31 @@ export default function VaultPage() {
   } = useReadContracts({
     allowFailure: false,
     contracts: [
-      { abi: vaultAbi, address: vaultAddress, functionName: "status", chainId: monadTestnet.id },
-      { abi: vaultAbi, address: vaultAddress, functionName: "creator", chainId: monadTestnet.id },
+      { abi: vaultAbi, address: vaultAddress, functionName: "status", chainId: monadMainnet.id },
+      { abi: vaultAbi, address: vaultAddress, functionName: "creator", chainId: monadMainnet.id },
       {
         abi: vaultAbi,
         address: vaultAddress,
         functionName: "reportCommitment",
-        chainId: monadTestnet.id,
+        chainId: monadMainnet.id,
       },
       {
         abi: vaultAbi,
         address: vaultAddress,
         functionName: "getRecipients",
-        chainId: monadTestnet.id,
+        chainId: monadMainnet.id,
       },
       {
         abi: vaultAbi,
         address: vaultAddress,
         functionName: "getSharesBps",
-        chainId: monadTestnet.id,
+        chainId: monadMainnet.id,
       },
       {
         abi: vaultAbi,
         address: vaultAddress,
         functionName: "acceptedCount",
-        chainId: monadTestnet.id,
+        chainId: monadMainnet.id,
       },
     ],
     query: { enabled: validAddress },
@@ -82,7 +82,7 @@ export default function VaultPage() {
         address: vaultAddress,
         functionName: "hasAccepted" as const,
         args: [recipient] as const,
-        chainId: monadTestnet.id,
+        chainId: monadMainnet.id,
       })),
     [recipients, vaultAddress],
   );
@@ -102,7 +102,7 @@ export default function VaultPage() {
         address: vaultAddress,
         functionName: "claimable" as const,
         args: [zeroAddress, recipient] as const,
-        chainId: monadTestnet.id,
+        chainId: monadMainnet.id,
       })),
     [recipients, vaultAddress],
   );
@@ -127,7 +127,7 @@ export default function VaultPage() {
     address: vaultAddress,
     functionName: "claimable",
     args: [zeroAddress, account ?? zeroAddress],
-    chainId: monadTestnet.id,
+    chainId: monadMainnet.id,
     query: {
       enabled: validAddress && Boolean(account),
       refetchInterval: 4_000,
@@ -221,7 +221,7 @@ export default function VaultPage() {
   const isRecipient = recipientIndex >= 0;
   const hasAccepted =
     statusNumber === 1 || (recipientIndex >= 0 && Boolean(acceptances?.[recipientIndex]));
-  const wrongNetwork = isConnected && chainId !== monadTestnet.id;
+  const wrongNetwork = isConnected && chainId !== monadMainnet.id;
   const busy = isWalletPending || isConfirming;
   const transactionError = actionError ??
     (confirmationError || writeError
@@ -287,7 +287,7 @@ export default function VaultPage() {
       abi: vaultAbi,
       address: vaultAddress,
       functionName: "acceptAgreement",
-      chainId: monadTestnet.id,
+      chainId: monadMainnet.id,
     });
   }
 
@@ -302,7 +302,7 @@ export default function VaultPage() {
       address: vaultAddress,
       functionName: "depositNative",
       value,
-      chainId: monadTestnet.id,
+      chainId: monadMainnet.id,
     });
   }
 
@@ -314,7 +314,7 @@ export default function VaultPage() {
       address: vaultAddress,
       functionName: "claim",
       args: [zeroAddress],
-      chainId: monadTestnet.id,
+      chainId: monadMainnet.id,
     });
   }
 
@@ -338,7 +338,7 @@ export default function VaultPage() {
         {validAddress ? (
           <a
             className="mono-copy"
-            href={`${monadTestnet.blockExplorers.default.url}/address/${vaultAddress}`}
+            href={`${monadMainnet.blockExplorers.default.url}/address/${vaultAddress}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -350,7 +350,7 @@ export default function VaultPage() {
       {!validAddress ? (
         <section className="case-panel state-panel danger-text">Invalid vault address.</section>
       ) : isLoading ? (
-        <section className="case-panel state-panel">Reading the vault from Monad Testnet…</section>
+        <section className="case-panel state-panel">Reading the vault from Monad Mainnet…</section>
       ) : error || !data ? (
         <section className="case-panel state-panel danger-text">
           Could not read a vault contract at this address. {error?.message}
@@ -500,15 +500,15 @@ export default function VaultPage() {
           )}
 
           <div className="transaction-strip" aria-live="polite">
-            {!isConnected && <span>Connect a wallet to accept, simulate a payout, or claim.</span>}
+            {!isConnected && <span>Connect a wallet to accept, fund a payout, or claim.</span>}
             {wrongNetwork && (
               <>
-                <span className="danger-text">Switch to Monad Testnet before signing.</span>
+                <span className="danger-text">Switch to Monad Mainnet before signing.</span>
                 <button
                   className="button button-secondary"
                   type="button"
                   disabled={isSwitching}
-                  onClick={() => switchChain({ chainId: monadTestnet.id })}
+                  onClick={() => switchChain({ chainId: monadMainnet.id })}
                 >
                   {isSwitching ? "Switching…" : "Switch network"}
                 </button>
@@ -519,7 +519,7 @@ export default function VaultPage() {
               <span>
                 Submitted ·{" "}
                 <a
-                  href={`${monadTestnet.blockExplorers.default.url}/tx/${hash}`}
+                  href={`${monadMainnet.blockExplorers.default.url}/tx/${hash}`}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -530,7 +530,7 @@ export default function VaultPage() {
             )}
             {confirmedAction && (
               <span className="status-dot">
-                Confirmed · {confirmedAction === "accept" ? "agreement accepted" : confirmedAction === "deposit" ? "test bounty allocated" : "claim completed"}.
+                Confirmed · {confirmedAction === "accept" ? "agreement accepted" : confirmedAction === "deposit" ? "bounty allocated" : "claim completed"}.
               </span>
             )}
             {transactionError && <span className="danger-text">{transactionError}</span>}
@@ -603,21 +603,19 @@ export default function VaultPage() {
           {statusNumber === 1 && (
             <details className="demo-tools">
               <summary>
-                <span>DEMO TOOLS</span>
-                <span>Simulate the external bounty payer</span>
+                <span>PAYER TOOLS</span>
+                <span>Send the bounty payment</span>
               </summary>
               <div className="demo-tools-content">
                 <p className="demo-tools-note">
-                  Fund the connected payer wallet first. Do not request faucet MON directly to the
-                  vault: batch faucet transfers can fail for contract addresses.
+                  This sends real MON from the connected wallet and allocates it immediately using
+                  the accepted split. Confirm the amount before signing.
                 </p>
-                <a href="https://faucet.monad.xyz/" target="_blank" rel="noreferrer">
-                  1 · Fund payer wallet ↗
-                </a>
                 <label>
-                  <span>2 · Bounty amount</span>
+                  <span>1 · Bounty amount</span>
                   <input
                     inputMode="decimal"
+                    placeholder="0.01"
                     value={depositAmount}
                     onChange={(event) => setDepositAmount(event.target.value)}
                   />
@@ -632,7 +630,7 @@ export default function VaultPage() {
                     ? "Confirm in wallet…"
                     : isConfirming && action === "deposit"
                       ? "Confirming on Monad…"
-                      : "3 · Send payout to vault"}
+                      : "2 · Send payout to vault"}
                 </button>
               </div>
             </details>
@@ -641,9 +639,9 @@ export default function VaultPage() {
       )}
 
       <p className="privacy-note">
-        Current balances and transaction states come directly from Monad Testnet. Once observed,
-        completed claim amounts are preserved only in this browser for the payout receipt. Testnet
-        MON is for development only and has no real-world value.
+        Current balances and transaction states come directly from Monad Mainnet. Once observed,
+        completed claim amounts are preserved only in this browser for the payout receipt. Mainnet
+        MON has real-world value; confirm every amount and wallet prompt before signing.
       </p>
       </main>
     </>

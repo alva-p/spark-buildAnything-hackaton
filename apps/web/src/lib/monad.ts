@@ -1,24 +1,20 @@
 import { defineChain } from "viem";
 
-const rpcUrl =
-  process.env.NEXT_PUBLIC_MONAD_RPC_URL ?? "https://testnet-rpc.monad.xyz";
-
-export const monadTestnet = defineChain({
-  id: 10143,
-  name: "Monad Testnet",
+export const monadMainnet = defineChain({
+  id: 143,
+  name: "Monad Mainnet",
   nativeCurrency: {
     name: "Monad",
     symbol: "MON",
     decimals: 18,
   },
   rpcUrls: {
-    default: { http: [rpcUrl] },
+    default: { http: ["https://rpc.monad.xyz"] },
   },
   blockExplorers: {
     default: {
       name: "Monadscan",
-      url: "https://testnet.monadscan.com",
+      url: "https://monadscan.com",
     },
   },
-  testnet: true,
 });

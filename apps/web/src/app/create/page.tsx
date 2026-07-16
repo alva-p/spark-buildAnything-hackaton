@@ -23,7 +23,7 @@ import {
   validateSplit,
   type RecipientDraft,
 } from "@/lib/create-vault";
-import { monadTestnet } from "@/lib/monad";
+import { monadMainnet } from "@/lib/monad";
 
 const emptyRows: RecipientDraft[] = [
   { address: "", percentage: "50" },
@@ -87,7 +87,7 @@ export default function CreateVaultPage() {
   }, [address]);
 
   useEffect(() => {
-    if (!receipt || !commitment || !address || !factoryAddress || createdVault) return;
+    if (!receipt || !commitment || !address || createdVault) return;
 
     try {
       const expectedFactory = factoryAddress.toLowerCase();
@@ -140,7 +140,7 @@ export default function CreateVaultPage() {
   }
 
   function createVault() {
-    if (!factoryAddress || !split || !commitment || !isConnected || chainId !== monadTestnet.id) {
+    if (!split || !commitment || !isConnected || chainId !== monadMainnet.id) {
       return;
     }
 
@@ -150,7 +150,7 @@ export default function CreateVaultPage() {
       address: factoryAddress,
       functionName: "createVault",
       args: [commitment, split.recipients, split.sharesBps],
-      chainId: monadTestnet.id,
+      chainId: monadMainnet.id,
     });
   }
 
@@ -312,7 +312,7 @@ export default function CreateVaultPage() {
             </div>
             <div>
               <span className="field-label">NETWORK · VERIFIED FACTORY</span>
-              <strong>Monad Testnet · {monadTestnet.id}</strong>
+              <strong>Monad Mainnet · {monadMainnet.id}</strong>
               <code>{factoryAddress}</code>
             </div>
             <div className="wide-field">
@@ -337,27 +337,24 @@ export default function CreateVaultPage() {
 
           <div className="transaction-strip" aria-live="polite">
             {!isConnected && <span>Connect a wallet to continue.</span>}
-            {isConnected && chainId !== monadTestnet.id && (
+            {isConnected && chainId !== monadMainnet.id && (
               <>
-                <span className="danger-text">Switch to Monad Testnet before signing.</span>
+                <span className="danger-text">Switch to Monad Mainnet before signing.</span>
                 <button
                   className="button button-secondary"
                   type="button"
                   disabled={isSwitching}
-                  onClick={() => switchChain({ chainId: monadTestnet.id })}
+                  onClick={() => switchChain({ chainId: monadMainnet.id })}
                 >
                   {isSwitching ? "Switching…" : "Switch network"}
                 </button>
               </>
             )}
-            {!factoryAddress && (
-              <span className="danger-text">Set a valid NEXT_PUBLIC_FACTORY_ADDRESS to enable creation.</span>
-            )}
             {isWalletPending && <span className="status-dot">Confirm the transaction in your wallet…</span>}
             {hash && !createdVault && (
               <span>
                 Submitted ·{" "}
-                <a href={`${monadTestnet.blockExplorers.default.url}/tx/${hash}`} target="_blank" rel="noreferrer">
+                <a href={`${monadMainnet.blockExplorers.default.url}/tx/${hash}`} target="_blank" rel="noreferrer">
                   {hash.slice(0, 10)}…{hash.slice(-8)}
                 </a>
                 {isConfirming ? " · waiting for confirmation" : ""}
@@ -375,11 +372,10 @@ export default function CreateVaultPage() {
               className="button button-primary"
               type="button"
               disabled={
-                !factoryAddress ||
                 !split ||
                 !commitment ||
                 !isConnected ||
-                chainId !== monadTestnet.id ||
+                chainId !== monadMainnet.id ||
                 writesBlocked
               }
               onClick={createVault}

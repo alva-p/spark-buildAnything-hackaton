@@ -49,6 +49,7 @@ The contract uses pull-based claims: one recipient never needs to wait for, or d
 | Item | Deployment |
 |---|---|
 | Network | Monad Mainnet · chain ID `143` |
+| Frontend | [auditsplit.alva-p.xyz](https://auditsplit.alva-p.xyz/) |
 | Factory | [`0x0ccbe83afD8423baE0094857B3D97cAec9B52D0C`](https://monadscan.com/address/0x0ccbe83afD8423baE0094857B3D97cAec9B52D0C) |
 | Factory deployment | [`0x7e6492…86ed8`](https://monadscan.com/tx/0x7e6492ad87d575bea55fe53249b012d4e3177aae711755d56f68b6e637d86ed8) |
 | Deployer | [`0xC56a071b9363F29B18538747b59670b7e6A3558b`](https://monadscan.com/address/0xC56a071b9363F29B18538747b59670b7e6A3558b) |
@@ -59,7 +60,6 @@ The contract uses pull-based claims: one recipient never needs to wait for, or d
 | Item | Deployment |
 |---|---|
 | Network | Monad Testnet · chain ID `10143` |
-| Frontend | [auditsplit.alva-p.xyz](https://auditsplit.alva-p.xyz/) |
 | Factory | [`0xe3335E3Ea2DbFe0aff7e92331f86AB3C53314536`](https://testnet.monadscan.com/address/0xe3335E3Ea2DbFe0aff7e92331f86AB3C53314536) |
 | Factory deployment | [`0x26b26f…5c891be`](https://testnet.monadscan.com/tx/0x26b26f52422aa2328c2a829dde594b6458ae6aedd6d5fa55d8f24cb6e5c891be) |
 | Deployer | [`0xB2ca5438D2C30624FC19c9206F41B550d4A502E8`](https://testnet.monadscan.com/address/0xB2ca5438D2C30624FC19c9206F41B550d4A502E8) |
@@ -73,11 +73,11 @@ A live two-recipient payout completed successfully on Monad Testnet with a 75% /
 
 | Step | Onchain evidence |
 |---|---|
-| Demo vault | [`0x6cD726…Fb8907`](https://testnet.monadscan.com/address/0x6cD726b6Ee769fC357a6843016593AEB45Fb8907) |
-| Vault creation | [`0x01be25…4cbbc2`](https://testnet.monadscan.com/tx/0x01be2597b268f971ff13bd3a6910f30181d29f583dbaca5f40cc07c4a94cbbc2) |
-| 1.4 MON payout | [`0xaaefa4…4b699`](https://testnet.monadscan.com/tx/0xaaefa48949cd5d15551330188c72880fe5a5c0d1c5bad784fc5baf7085f4b699) |
-| 25% claim · 0.35 MON | [`0xf91375…7a140`](https://testnet.monadscan.com/tx/0xf91375ccddd92ee328457c5e345868e00c6e0bdb035a61c651ed71876dd7a140) |
-| 75% claim · 1.05 MON | [`0xe3d5be…49bb9`](https://testnet.monadscan.com/tx/0xe3d5be23128a60fce02323b277350fee3f78514522984ff38cc5eb87cc449bb9) |
+| Demo vault | [`0xF104A4…67Aa82`](https://testnet.monadscan.com/address/0xF104A45b93E6129BDe6676F271eD5b58E067Aa82) |
+| Vault creation | [`0x2fd3d2…3052a6`](https://testnet.monadscan.com/tx/0x2fd3d24bc1a4f0f3c5a1d4909d36d3a5db35685163a7ac8ccc34fa500b3052a6) |
+| 5 MON payout | [`0x7bb995…cf520a`](https://testnet.monadscan.com/tx/0x7bb995afe15b1041bce0a11fb4e9daaa23fbebc675c06e2cccad9cdd18cf520a) |
+| 75% claim · 3.75 MON | [`0xc5693e…ec5d0a`](https://testnet.monadscan.com/tx/0xc5693e4cd27c1fe6c6da6943732b2e50dd4fca6b3260b073a3e86bf775ec5d0a) |
+| 25% claim · 1.25 MON | [`0xaffe5b…c3bda8`](https://testnet.monadscan.com/tx/0xaffe5b6e70a2b8da38365d173e36fa37d93c5790361a958d409888d01dc3bda8) |
 
 Both recipients finished with zero claimable balance and the vault finished with zero MON held.
 
@@ -100,11 +100,10 @@ Requirements: Node.js 22+, npm, and Foundry.
 git clone https://github.com/alva-p/spark-buildAnything-hackaton.git
 cd spark-buildAnything-hackaton/apps/web
 npm ci
-cp .env.example .env.local
 npm run dev
 ```
 
-The example environment already points to Monad Testnet and the deployed factory. Never add a private key to frontend environment files.
+The frontend points to Monad Mainnet and the verified factory. Never add a private key to frontend environment files.
 
 ## Verify the repository
 

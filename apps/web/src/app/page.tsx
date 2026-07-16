@@ -6,7 +6,7 @@ import { zeroAddress, type Address } from "viem";
 import { useAccount, useReadContract, useReadContracts } from "wagmi";
 import { SiteHeader } from "@/components/site-header";
 import { factoryAbi, factoryAddress, vaultAbi } from "@/lib/contracts";
-import { monadTestnet } from "@/lib/monad";
+import { monadMainnet } from "@/lib/monad";
 
 const steps = [
   ["01", "Define", "Set recipients and exact percentage shares. The private commitment is generated locally."],
@@ -27,28 +27,28 @@ export default function Home() {
   const [vaultLabels, setVaultLabels] = useState<Record<string, string>>({});
   const { data: vaults, isLoading: vaultsLoading } = useReadContract({
     abi: factoryAbi,
-    address: factoryAddress ?? zeroAddress,
+    address: factoryAddress,
     functionName: "getVaultsByCreator",
     args: [account ?? zeroAddress],
-    chainId: monadTestnet.id,
-    query: { enabled: Boolean(factoryAddress && account) },
+    chainId: monadMainnet.id,
+    query: { enabled: Boolean(account) },
   });
   const createdVaults = vaults ?? emptyVaults;
   const vaultContracts = useMemo(
     () =>
       createdVaults.flatMap((address) => [
-        { abi: vaultAbi, address, functionName: "status" as const, chainId: monadTestnet.id },
+        { abi: vaultAbi, address, functionName: "status" as const, chainId: monadMainnet.id },
         {
           abi: vaultAbi,
           address,
           functionName: "getRecipients" as const,
-          chainId: monadTestnet.id,
+          chainId: monadMainnet.id,
         },
         {
           abi: vaultAbi,
           address,
           functionName: "getSharesBps" as const,
-          chainId: monadTestnet.id,
+          chainId: monadMainnet.id,
         },
       ]),
     [createdVaults],
@@ -92,18 +92,16 @@ export default function Home() {
                 Create payout vault
               </Link>
             </div>
-            {factoryAddress && (
-              <a
-                className="deployment-proof"
-                href={`${monadTestnet.blockExplorers.default.url}/address/${factoryAddress}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span>DEPLOYED + VERIFIED</span>
-                <code>{factoryAddress.slice(0, 8)}…{factoryAddress.slice(-6)}</code>
-                <span>MONAD TESTNET ↗</span>
-              </a>
-            )}
+            <a
+              className="deployment-proof"
+              href={`${monadMainnet.blockExplorers.default.url}/address/${factoryAddress}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>DEPLOYED + VERIFIED</span>
+              <code>{factoryAddress.slice(0, 8)}…{factoryAddress.slice(-6)}</code>
+              <span>MONAD MAINNET ↗</span>
+            </a>
           </div>
 
           <aside className="case-panel payout-route" aria-label="AuditSplit payout route">
@@ -183,7 +181,7 @@ export default function Home() {
             </div>
           ) : vaultsLoading || vaultDetailsLoading ? (
             <div className="history-empty">
-              <strong>Reading Monad Testnet…</strong>
+              <strong>Reading Monad Mainnet…</strong>
               <span>Loading vaults created by {shortAddress(account)}.</span>
             </div>
           ) : createdVaults.length === 0 ? (
