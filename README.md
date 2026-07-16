@@ -10,7 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://auditsplit.alva-p.xyz/"><strong>Live Demo</strong></a> ·
+  <a href="https://auditsplit.alva-p.xyz/"><strong>Live App</strong></a> ·
+  <a href="https://www.youtube.com/watch?v=PogF8xJEYdI"><strong>Video Demo</strong></a> ·
   <a href="https://github.com/alva-p/spark-buildAnything-hackaton/actions/workflows/ci.yml"><img src="https://github.com/alva-p/spark-buildAnything-hackaton/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
 </p>
 
