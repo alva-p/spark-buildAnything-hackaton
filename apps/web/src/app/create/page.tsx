@@ -107,7 +107,7 @@ export default function CreateVaultPage() {
 
       const vault = event.args.vault;
       localStorage.setItem(
-        `auditsplit:vault:${vault.toLowerCase()}`,
+        `auditsplit:vault:${monadMainnet.id}:${vault.toLowerCase()}`,
         JSON.stringify({ label: label.trim(), salt, commitment, createdAt: Date.now() }),
       );
       setCreatedVault(vault);
@@ -119,7 +119,10 @@ export default function CreateVaultPage() {
 
   useEffect(() => {
     if (!createdVault) return;
-    const redirect = window.setTimeout(() => router.replace(`/vault/${createdVault}`), 900);
+    const redirect = window.setTimeout(
+      () => router.replace(`/vault/${createdVault}?network=mainnet`),
+      900,
+    );
     return () => window.clearTimeout(redirect);
   }, [createdVault, router]);
 

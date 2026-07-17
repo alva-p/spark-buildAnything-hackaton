@@ -63,7 +63,10 @@ export default function Home() {
     const labels: Record<string, string> = {};
     createdVaults.forEach((vault) => {
       try {
-        const stored = localStorage.getItem(`auditsplit:vault:${vault.toLowerCase()}`);
+        const addressKey = vault.toLowerCase();
+        const stored =
+          localStorage.getItem(`auditsplit:vault:${monadMainnet.id}:${addressKey}`) ??
+          localStorage.getItem(`auditsplit:vault:${addressKey}`);
         const label = stored ? JSON.parse(stored).label : undefined;
         if (typeof label === "string" && label) labels[vault.toLowerCase()] = label;
       } catch {
@@ -198,7 +201,7 @@ export default function Home() {
                 const shares = (vaultDetails?.[index * 3 + 2] ?? []) as readonly number[];
 
                 return (
-                  <Link className="history-card" href={`/vault/${vault}`} key={vault}>
+                  <Link className="history-card" href={`/vault/${vault}?network=mainnet`} key={vault}>
                     <div className="history-card-top">
                       <div>
                         <span className="field-label">PAYOUT VAULT</span>

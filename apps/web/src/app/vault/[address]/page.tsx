@@ -14,7 +14,13 @@ import {
 import { SiteHeader } from "@/components/site-header";
 import { vaultAbi } from "@/lib/contracts";
 import { transactionErrorMessage } from "@/lib/errors";
-import { monadMainnet } from "@/lib/monad";
+import {
+  monadChains,
+  monadMainnet,
+  monadTestnet,
+  resolveVaultNetwork,
+  type MonadNetwork,
+} from "@/lib/monad";
 import { parseMonAmount } from "@/lib/vault";
 
 const statuses = ["Pending", "Active", "Cancelled"] as const;
@@ -26,6 +32,7 @@ export default function VaultPage() {
   const vaultAddress = validAddress ? getAddress(params.address) : zeroAddress;
   const { address: account, chainId, isConnected } = useAccount();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const [requestedNetwork, setRequestedNetwork] = useState<MonadNetwork | null>();
   const [localLabel, setLocalLabel] = useState<string>();
   const [depositAmount, setDepositAmount] = useState("");
   const [action, setAction] = useState<Action>();
@@ -35,6 +42,50 @@ export default function VaultPage() {
   const [addressCopied, setAddressCopied] = useState(false);
   const [observedAllocations, setObservedAllocations] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    const network = new URLSearchParams(window.location.search).get("network");
+    setRequestedNetwork(network === "mainnet" || network === "testnet" ? network : null);
+  }, [params.address]);
+
+  const mainnetProbe = useReadContract({
+    abi: vaultAbi,
+    address: vaultAddress,
+    functionName: "creator",
+    chainId: monadMainnet.id,
+    query: {
+      enabled: validAddress && requestedNetwork !== undefined && requestedNetwork !== "testnet",
+      retry: false,
+    },
+  });
+  const testnetProbe = useReadContract({
+    abi: vaultAbi,
+    address: vaultAddress,
+    functionName: "creator",
+    chainId: monadTestnet.id,
+    query: {
+      enabled: validAddress && requestedNetwork !== undefined && requestedNetwork !== "mainnet",
+      retry: false,
+    },
+  });
+  const probesLoading =
+    requestedNetwork === null && (mainnetProbe.isLoading || testnetProbe.isLoading);
+  const vaultNetwork =
+    requestedNetwork === undefined || probesLoading
+      ? undefined
+      : resolveVaultNetwork(
+          requestedNetwork,
+          Boolean(mainnetProbe.data),
+          Boolean(testnetProbe.data),
+        );
+  const vaultChain = monadChains[vaultNetwork ?? "mainnet"];
+
+  useEffect(() => {
+    if (!vaultNetwork || requestedNetwork !== null) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("network", vaultNetwork);
+    window.history.replaceState(null, "", url);
+  }, [requestedNetwork, vaultNetwork]);
+
   const {
     data,
     error,
@@ -43,34 +94,34 @@ export default function VaultPage() {
   } = useReadContracts({
     allowFailure: false,
     contracts: [
-      { abi: vaultAbi, address: vaultAddress, functionName: "status", chainId: monadMainnet.id },
-      { abi: vaultAbi, address: vaultAddress, functionName: "creator", chainId: monadMainnet.id },
+      { abi: vaultAbi, address: vaultAddress, functionName: "status", chainId: vaultChain.id },
+      { abi: vaultAbi, address: vaultAddress, functionName: "creator", chainId: vaultChain.id },
       {
         abi: vaultAbi,
         address: vaultAddress,
         functionName: "reportCommitment",
-        chainId: monadMainnet.id,
+        chainId: vaultChain.id,
       },
       {
         abi: vaultAbi,
         address: vaultAddress,
         functionName: "getRecipients",
-        chainId: monadMainnet.id,
+        chainId: vaultChain.id,
       },
       {
         abi: vaultAbi,
         address: vaultAddress,
         functionName: "getSharesBps",
-        chainId: monadMainnet.id,
+        chainId: vaultChain.id,
       },
       {
         abi: vaultAbi,
         address: vaultAddress,
         functionName: "acceptedCount",
-        chainId: monadMainnet.id,
+        chainId: vaultChain.id,
       },
     ],
-    query: { enabled: validAddress },
+    query: { enabled: validAddress && Boolean(vaultNetwork), retry: false },
   });
 
   const [status, creator, commitment, recipients, shares, acceptedCount] = data ?? [];
@@ -82,9 +133,9 @@ export default function VaultPage() {
         address: vaultAddress,
         functionName: "hasAccepted" as const,
         args: [recipient] as const,
-        chainId: monadMainnet.id,
+        chainId: vaultChain.id,
       })),
-    [recipients, vaultAddress],
+    [recipients, vaultAddress, vaultChain.id],
   );
   const {
     data: acceptances,
@@ -102,9 +153,9 @@ export default function VaultPage() {
         address: vaultAddress,
         functionName: "claimable" as const,
         args: [zeroAddress, recipient] as const,
-        chainId: monadMainnet.id,
+        chainId: vaultChain.id,
       })),
-    [recipients, vaultAddress],
+    [recipients, vaultAddress, vaultChain.id],
   );
   const {
     data: recipientClaimables,
@@ -127,9 +178,9 @@ export default function VaultPage() {
     address: vaultAddress,
     functionName: "claimable",
     args: [zeroAddress, account ?? zeroAddress],
-    chainId: monadMainnet.id,
+    chainId: vaultChain.id,
     query: {
-      enabled: validAddress && Boolean(account),
+      enabled: validAddress && Boolean(vaultNetwork) && Boolean(account),
       refetchInterval: 4_000,
     },
   });
@@ -145,14 +196,21 @@ export default function VaultPage() {
     data: receipt,
     error: confirmationError,
     isLoading: isConfirming,
-  } = useWaitForTransactionReceipt({ hash });
+  } = useWaitForTransactionReceipt({ hash, chainId: vaultChain.id });
 
   useEffect(() => {
-    if (!validAddress) return;
+    if (!validAddress || !vaultNetwork) return;
+    setLocalLabel(undefined);
+    setObservedAllocations({});
     try {
-      const stored = localStorage.getItem(`auditsplit:vault:${vaultAddress.toLowerCase()}`);
+      const addressKey = vaultAddress.toLowerCase();
+      const stored =
+        localStorage.getItem(`auditsplit:vault:${vaultChain.id}:${addressKey}`) ??
+        localStorage.getItem(`auditsplit:vault:${addressKey}`);
       if (stored) setLocalLabel(JSON.parse(stored).label);
-      const payout = localStorage.getItem(`auditsplit:payout:${vaultAddress.toLowerCase()}`);
+      const payout =
+        localStorage.getItem(`auditsplit:payout:${vaultChain.id}:${addressKey}`) ??
+        localStorage.getItem(`auditsplit:payout:${addressKey}`);
       if (payout) {
         const parsed = JSON.parse(payout) as Record<string, unknown>;
         setObservedAllocations(
@@ -167,7 +225,7 @@ export default function VaultPage() {
       setLocalLabel(undefined);
       setObservedAllocations({});
     }
-  }, [validAddress, vaultAddress]);
+  }, [validAddress, vaultAddress, vaultChain.id, vaultNetwork]);
 
   useEffect(() => {
     if (!recipients || !recipientClaimables) return;
@@ -187,12 +245,12 @@ export default function VaultPage() {
 
       if (!changed) return current;
       localStorage.setItem(
-        `auditsplit:payout:${vaultAddress.toLowerCase()}`,
+        `auditsplit:payout:${vaultChain.id}:${vaultAddress.toLowerCase()}`,
         JSON.stringify(next),
       );
       return next;
     });
-  }, [recipientClaimables, recipients, vaultAddress]);
+  }, [recipientClaimables, recipients, vaultAddress, vaultChain.id]);
 
   useEffect(() => {
     if (!receipt || receipt.transactionHash === handledHash) return;
@@ -221,7 +279,7 @@ export default function VaultPage() {
   const isRecipient = recipientIndex >= 0;
   const hasAccepted =
     statusNumber === 1 || (recipientIndex >= 0 && Boolean(acceptances?.[recipientIndex]));
-  const wrongNetwork = isConnected && chainId !== monadMainnet.id;
+  const wrongNetwork = isConnected && chainId !== vaultChain.id;
   const busy = isWalletPending || isConfirming;
   const transactionError = actionError ??
     (confirmationError || writeError
@@ -287,7 +345,7 @@ export default function VaultPage() {
       abi: vaultAbi,
       address: vaultAddress,
       functionName: "acceptAgreement",
-      chainId: monadMainnet.id,
+      chainId: vaultChain.id,
     });
   }
 
@@ -302,7 +360,7 @@ export default function VaultPage() {
       address: vaultAddress,
       functionName: "depositNative",
       value,
-      chainId: monadMainnet.id,
+      chainId: vaultChain.id,
     });
   }
 
@@ -314,7 +372,7 @@ export default function VaultPage() {
       address: vaultAddress,
       functionName: "claim",
       args: [zeroAddress],
-      chainId: monadMainnet.id,
+      chainId: vaultChain.id,
     });
   }
 
@@ -333,12 +391,14 @@ export default function VaultPage() {
       <main className="shell create-shell">
 
       <section className="create-heading vault-heading">
-        <div className="eyebrow">PAYOUT VAULT · LIVE MONAD STATE</div>
+        <div className="eyebrow">
+          PAYOUT VAULT · {vaultNetwork ? vaultChain.name.toUpperCase() : "LIVE MONAD STATE"}
+        </div>
         <h1>{localLabel || "Vault case file."}</h1>
-        {validAddress ? (
+        {validAddress && vaultNetwork ? (
           <a
             className="mono-copy"
-            href={`${monadMainnet.blockExplorers.default.url}/address/${vaultAddress}`}
+            href={`${vaultChain.blockExplorers.default.url}/address/${vaultAddress}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -349,8 +409,14 @@ export default function VaultPage() {
 
       {!validAddress ? (
         <section className="case-panel state-panel danger-text">Invalid vault address.</section>
+      ) : requestedNetwork === undefined || probesLoading ? (
+        <section className="case-panel state-panel">Finding this vault on Monad…</section>
+      ) : !vaultNetwork ? (
+        <section className="case-panel state-panel danger-text">
+          Could not find an AuditSplit vault at this address on Monad Mainnet or Testnet.
+        </section>
       ) : isLoading ? (
-        <section className="case-panel state-panel">Reading the vault from Monad Mainnet…</section>
+        <section className="case-panel state-panel">Reading the vault from {vaultChain.name}…</section>
       ) : error || !data ? (
         <section className="case-panel state-panel danger-text">
           Could not read a vault contract at this address. {error?.message}
@@ -503,12 +569,12 @@ export default function VaultPage() {
             {!isConnected && <span>Connect a wallet to accept, fund a payout, or claim.</span>}
             {wrongNetwork && (
               <>
-                <span className="danger-text">Switch to Monad Mainnet before signing.</span>
+                <span className="danger-text">Switch to {vaultChain.name} before signing.</span>
                 <button
                   className="button button-secondary"
                   type="button"
                   disabled={isSwitching}
-                  onClick={() => switchChain({ chainId: monadMainnet.id })}
+                  onClick={() => switchChain({ chainId: vaultChain.id })}
                 >
                   {isSwitching ? "Switching…" : "Switch network"}
                 </button>
@@ -519,7 +585,7 @@ export default function VaultPage() {
               <span>
                 Submitted ·{" "}
                 <a
-                  href={`${monadMainnet.blockExplorers.default.url}/tx/${hash}`}
+                  href={`${vaultChain.blockExplorers.default.url}/tx/${hash}`}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -639,9 +705,11 @@ export default function VaultPage() {
       )}
 
       <p className="privacy-note">
-        Current balances and transaction states come directly from Monad Mainnet. Once observed,
-        completed claim amounts are preserved only in this browser for the payout receipt. Mainnet
-        MON has real-world value; confirm every amount and wallet prompt before signing.
+        Current balances and transaction states come directly from {vaultNetwork ? vaultChain.name : "Monad"}. Once
+        observed, completed claim amounts are preserved only in this browser for the payout
+        receipt. {vaultNetwork === "mainnet"
+          ? "Mainnet MON has real-world value; confirm every amount and wallet prompt before signing."
+          : "Testnet MON is for development only and has no real-world value."}
       </p>
       </main>
     </>
