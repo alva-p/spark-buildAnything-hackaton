@@ -17,15 +17,76 @@ const steps = [
 
 const vaultStatuses = ["Pending", "Active", "Cancelled"] as const;
 const emptyVaults: readonly Address[] = [];
+const exampleAccount: Address = "0x26F98D8Af2D99b1a8330bde564e5F9365eAb9588";
+const exampleVaultLabels: Record<string, string> = {
+  "mainnet:0x13265c83cd2ce8196f865884b3e8af1da23ba357": "BuildAnything",
+  "testnet:0xf104a45b93e6129bde6676f271ed5b58e067aa82": "protocol A team 21",
+  "testnet:0x153e06227ca6c64785e8fb0c9f7b9a5fe80bf37d": "team protocol A",
+  "testnet:0x6cd726b6ee769fc357a6843016593aeb45fb8907": "Split 3",
+  "testnet:0x6a81595f5be7a548932ba39bc7104769d7a806b5": "Split 2",
+  "testnet:0x7e73b63b4b2b581567130110c85a9440d314e617": "Split 1",
+};
+
+type VaultEntry = {
+  address: Address;
+  network: keyof typeof monadChains;
+  number: number;
+};
 
 function shortAddress(address: Address) {
   return `${address.slice(0, 8)}…${address.slice(-6)}`;
 }
 
-export default function Home() {
-  const { address: account } = useAccount();
-  const [vaultLabels, setVaultLabels] = useState<Record<string, string>>({});
-  const { data: mainnetVaults, isLoading: mainnetVaultsLoading } = useReadContract({
+function VaultCards({
+  vaults,
+  details,
+  labels,
+}: {
+  vaults: readonly VaultEntry[];
+  details: readonly unknown[] | undefined;
+  labels: Record<string, string>;
+}) {
+  return (
+    <div className="history-list">
+      {vaults.map(({ address: vault, network, number }, index) => {
+        const status = Number(details?.[index * 3] ?? 0);
+        const recipients = (details?.[index * 3 + 1] ?? []) as readonly Address[];
+        const shares = (details?.[index * 3 + 2] ?? []) as readonly number[];
+
+        return (
+          <Link
+            className="history-card"
+            href={`/vault/${vault}?network=${network}`}
+            key={`${network}:${vault}`}
+          >
+            <div className="history-card-top">
+              <div>
+                <span className="field-label">PAYOUT VAULT · {monadChains[network].name}</span>
+                <strong>{labels[`${network}:${vault.toLowerCase()}`] || `Split ${number}`}</strong>
+              </div>
+              <span className={`status-pill status-${(vaultStatuses[status] ?? "Unknown").toLowerCase()}`}>
+                {vaultStatuses[status] ?? "Unknown"}
+              </span>
+            </div>
+            <code>{vault}</code>
+            <div className="history-recipients">
+              {recipients.map((recipient, recipientIndex) => (
+                <span key={recipient}>
+                  <code>{shortAddress(recipient)}</code>
+                  <strong>{(Number(shares[recipientIndex] ?? 0) / 100).toFixed(2)}%</strong>
+                </span>
+              ))}
+            </div>
+            <span className="history-open">Open live vault →</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+function useCreatorVaults(account?: Address) {
+  const mainnet = useReadContract({
     abi: factoryAbi,
     address: factoryAddresses.mainnet,
     functionName: "getVaultsByCreator",
@@ -33,7 +94,7 @@ export default function Home() {
     chainId: monadMainnet.id,
     query: { enabled: Boolean(account) },
   });
-  const { data: testnetVaults, isLoading: testnetVaultsLoading } = useReadContract({
+  const testnet = useReadContract({
     abi: factoryAbi,
     address: factoryAddresses.testnet,
     functionName: "getVaultsByCreator",
@@ -41,39 +102,47 @@ export default function Home() {
     chainId: monadTestnet.id,
     query: { enabled: Boolean(account) },
   });
-  const createdVaults = useMemo(
-    () => vaultHistoryEntries(mainnetVaults ?? emptyVaults, testnetVaults ?? emptyVaults),
-    [mainnetVaults, testnetVaults],
+  const vaults = useMemo(
+    () => vaultHistoryEntries(mainnet.data ?? emptyVaults, testnet.data ?? emptyVaults),
+    [mainnet.data, testnet.data],
   );
-  const vaultContracts = useMemo(
+  const contracts = useMemo(
     () =>
-      createdVaults.flatMap(({ address, network }) => [
-        {
-          abi: vaultAbi,
-          address,
-          functionName: "status" as const,
-          chainId: monadChains[network].id,
-        },
-        {
-          abi: vaultAbi,
-          address,
-          functionName: "getRecipients" as const,
-          chainId: monadChains[network].id,
-        },
-        {
-          abi: vaultAbi,
-          address,
-          functionName: "getSharesBps" as const,
-          chainId: monadChains[network].id,
-        },
+      vaults.flatMap(({ address, network }) => [
+        { abi: vaultAbi, address, functionName: "status" as const, chainId: monadChains[network].id },
+        { abi: vaultAbi, address, functionName: "getRecipients" as const, chainId: monadChains[network].id },
+        { abi: vaultAbi, address, functionName: "getSharesBps" as const, chainId: monadChains[network].id },
       ]),
-    [createdVaults],
+    [vaults],
   );
-  const { data: vaultDetails, isLoading: vaultDetailsLoading } = useReadContracts({
+  const details = useReadContracts({
     allowFailure: false,
-    contracts: vaultContracts,
-    query: { enabled: vaultContracts.length > 0 },
+    contracts,
+    query: { enabled: contracts.length > 0 },
   });
+
+  return {
+    vaults,
+    details: details.data,
+    isLoading: mainnet.isLoading || testnet.isLoading || details.isLoading,
+    isError: mainnet.isError || testnet.isError || details.isError,
+  };
+}
+
+export default function Home() {
+  const { address: account } = useAccount();
+  const [vaultLabels, setVaultLabels] = useState<Record<string, string>>({});
+  const {
+    vaults: createdVaults,
+    details: vaultDetails,
+    isLoading: vaultsLoading,
+  } = useCreatorVaults(account);
+  const {
+    vaults: exampleVaults,
+    details: exampleVaultDetails,
+    isLoading: exampleVaultsLoading,
+    isError: exampleVaultsError,
+  } = useCreatorVaults(exampleAccount);
 
   useEffect(() => {
     const labels: Record<string, string> = {};
@@ -198,7 +267,7 @@ export default function Home() {
               <strong>Connect your creator wallet</strong>
               <span>Your previous splits will appear here automatically.</span>
             </div>
-          ) : mainnetVaultsLoading || testnetVaultsLoading || vaultDetailsLoading ? (
+          ) : vaultsLoading ? (
             <div className="history-empty">
               <strong>Reading Monad Mainnet and Testnet…</strong>
               <span>Loading vaults created by {shortAddress(account)}.</span>
@@ -209,45 +278,39 @@ export default function Home() {
               <span>Your first confirmed payout vault will be saved onchain here.</span>
             </div>
           ) : (
-            <div className="history-list">
-              {createdVaults.map(({ address: vault, network, number }, index) => {
-                const status = Number(vaultDetails?.[index * 3] ?? 0);
-                const recipients = (vaultDetails?.[index * 3 + 1] ?? []) as readonly Address[];
-                const shares = (vaultDetails?.[index * 3 + 2] ?? []) as readonly number[];
-
-                return (
-                  <Link
-                    className="history-card"
-                    href={`/vault/${vault}?network=${network}`}
-                    key={`${network}:${vault}`}
-                  >
-                    <div className="history-card-top">
-                      <div>
-                        <span className="field-label">PAYOUT VAULT · {monadChains[network].name}</span>
-                        <strong>{vaultLabels[`${network}:${vault.toLowerCase()}`] || `Split ${number}`}</strong>
-                      </div>
-                      <span className={`status-pill status-${(vaultStatuses[status] ?? "Unknown").toLowerCase()}`}>
-                        {vaultStatuses[status] ?? "Unknown"}
-                      </span>
-                    </div>
-                    <code>{vault}</code>
-                    <div className="history-recipients">
-                      {recipients.map((recipient, recipientIndex) => (
-                        <span key={recipient}>
-                          <code>{shortAddress(recipient)}</code>
-                          <strong>{(Number(shares[recipientIndex] ?? 0) / 100).toFixed(2)}%</strong>
-                        </span>
-                      ))}
-                    </div>
-                    <span className="history-open">Open live vault →</span>
-                  </Link>
-                );
-              })}
-            </div>
+            <VaultCards vaults={createdVaults} details={vaultDetails} labels={vaultLabels} />
           )}
           <p className="history-note">
             This list comes from the Mainnet and Testnet factory contracts and follows the
             connected creator wallet. Friendly labels stay only in this browser.
+          </p>
+        </section>
+
+        <section className="split-history" aria-labelledby="examples-title">
+          <div className="history-heading">
+            <div>
+              <span className="eyebrow">VERIFIED ONCHAIN DEMOS</span>
+              <h2 id="examples-title">Examples.</h2>
+            </div>
+            <span className="history-source">LIVE FROM MONAD</span>
+          </div>
+
+          {exampleVaultsLoading ? (
+            <div className="history-empty">
+              <strong>Reading live examples…</strong>
+              <span>Loading verified vaults from Monad Mainnet and Testnet.</span>
+            </div>
+          ) : exampleVaultsError ? (
+            <div className="history-empty">
+              <strong>Live examples are temporarily unavailable</strong>
+              <span>Monad RPC data could not be loaded. Please try again shortly.</span>
+            </div>
+          ) : (
+            <VaultCards vaults={exampleVaults} details={exampleVaultDetails} labels={exampleVaultLabels} />
+          )}
+          <p className="history-note">
+            These examples are read live from Monad for creator {shortAddress(exampleAccount)}. Friendly labels
+            are local; statuses, recipients, and shares come directly from each vault contract.
           </p>
         </section>
 
