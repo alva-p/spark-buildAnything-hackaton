@@ -53,3 +53,18 @@ export function resolveVaultNetwork(
 ): MonadNetwork | undefined {
   return requested ?? (mainnetFound ? "mainnet" : testnetFound ? "testnet" : undefined);
 }
+
+export function vaultHistoryEntries<T>(mainnet: readonly T[], testnet: readonly T[]) {
+  return [
+    ...[...mainnet].reverse().map((address, index) => ({
+      address,
+      network: "mainnet" as const,
+      number: mainnet.length - index,
+    })),
+    ...[...testnet].reverse().map((address, index) => ({
+      address,
+      network: "testnet" as const,
+      number: testnet.length - index,
+    })),
+  ];
+}

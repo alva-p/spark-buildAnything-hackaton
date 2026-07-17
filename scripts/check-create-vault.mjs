@@ -6,7 +6,7 @@ import {
   validateSplit,
 } from "../apps/web/src/lib/create-vault.ts";
 import { parseMonAmount } from "../apps/web/src/lib/vault.ts";
-import { resolveVaultNetwork } from "../apps/web/src/lib/monad.ts";
+import { resolveVaultNetwork, vaultHistoryEntries } from "../apps/web/src/lib/monad.ts";
 
 const alice = "0x0000000000000000000000000000000000000001";
 const bob = "0x0000000000000000000000000000000000000002";
@@ -31,5 +31,10 @@ assert.equal(parseMonAmount("not-a-number"), "Enter a valid MON amount.");
 assert.equal(resolveVaultNetwork(null, true, true), "mainnet");
 assert.equal(resolveVaultNetwork(null, false, true), "testnet");
 assert.equal(resolveVaultNetwork("testnet", true, false), "testnet");
+assert.deepEqual(vaultHistoryEntries(["main-1", "main-2"], ["test-1"]), [
+  { address: "main-2", network: "mainnet", number: 2 },
+  { address: "main-1", network: "mainnet", number: 1 },
+  { address: "test-1", network: "testnet", number: 1 },
+]);
 
 console.log("web transaction helpers: ok");

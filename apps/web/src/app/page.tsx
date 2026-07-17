@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { zeroAddress, type Address } from "viem";
 import { useAccount, useReadContract, useReadContracts } from "wagmi";
 import { SiteHeader } from "@/components/site-header";
-import { factoryAbi, factoryAddress, vaultAbi } from "@/lib/contracts";
-import { monadMainnet } from "@/lib/monad";
+import { factoryAbi, factoryAddress, factoryAddresses, vaultAbi } from "@/lib/contracts";
+import { monadChains, monadMainnet, monadTestnet, vaultHistoryEntries } from "@/lib/monad";
 
 const steps = [
   ["01", "Define", "Set recipients and exact percentage shares. The private commitment is generated locally."],
@@ -25,30 +25,46 @@ function shortAddress(address: Address) {
 export default function Home() {
   const { address: account } = useAccount();
   const [vaultLabels, setVaultLabels] = useState<Record<string, string>>({});
-  const { data: vaults, isLoading: vaultsLoading } = useReadContract({
+  const { data: mainnetVaults, isLoading: mainnetVaultsLoading } = useReadContract({
     abi: factoryAbi,
-    address: factoryAddress,
+    address: factoryAddresses.mainnet,
     functionName: "getVaultsByCreator",
     args: [account ?? zeroAddress],
     chainId: monadMainnet.id,
     query: { enabled: Boolean(account) },
   });
-  const createdVaults = vaults ?? emptyVaults;
+  const { data: testnetVaults, isLoading: testnetVaultsLoading } = useReadContract({
+    abi: factoryAbi,
+    address: factoryAddresses.testnet,
+    functionName: "getVaultsByCreator",
+    args: [account ?? zeroAddress],
+    chainId: monadTestnet.id,
+    query: { enabled: Boolean(account) },
+  });
+  const createdVaults = useMemo(
+    () => vaultHistoryEntries(mainnetVaults ?? emptyVaults, testnetVaults ?? emptyVaults),
+    [mainnetVaults, testnetVaults],
+  );
   const vaultContracts = useMemo(
     () =>
-      createdVaults.flatMap((address) => [
-        { abi: vaultAbi, address, functionName: "status" as const, chainId: monadMainnet.id },
+      createdVaults.flatMap(({ address, network }) => [
+        {
+          abi: vaultAbi,
+          address,
+          functionName: "status" as const,
+          chainId: monadChains[network].id,
+        },
         {
           abi: vaultAbi,
           address,
           functionName: "getRecipients" as const,
-          chainId: monadMainnet.id,
+          chainId: monadChains[network].id,
         },
         {
           abi: vaultAbi,
           address,
           functionName: "getSharesBps" as const,
-          chainId: monadMainnet.id,
+          chainId: monadChains[network].id,
         },
       ]),
     [createdVaults],
@@ -61,14 +77,14 @@ export default function Home() {
 
   useEffect(() => {
     const labels: Record<string, string> = {};
-    createdVaults.forEach((vault) => {
+    createdVaults.forEach(({ address: vault, network }) => {
       try {
         const addressKey = vault.toLowerCase();
         const stored =
-          localStorage.getItem(`auditsplit:vault:${monadMainnet.id}:${addressKey}`) ??
+          localStorage.getItem(`auditsplit:vault:${monadChains[network].id}:${addressKey}`) ??
           localStorage.getItem(`auditsplit:vault:${addressKey}`);
         const label = stored ? JSON.parse(stored).label : undefined;
-        if (typeof label === "string" && label) labels[vault.toLowerCase()] = label;
+        if (typeof label === "string" && label) labels[`${network}:${addressKey}`] = label;
       } catch {
         // Local labels are optional; live onchain history still renders without them.
       }
@@ -182,9 +198,9 @@ export default function Home() {
               <strong>Connect your creator wallet</strong>
               <span>Your previous splits will appear here automatically.</span>
             </div>
-          ) : vaultsLoading || vaultDetailsLoading ? (
+          ) : mainnetVaultsLoading || testnetVaultsLoading || vaultDetailsLoading ? (
             <div className="history-empty">
-              <strong>Reading Monad Mainnet…</strong>
+              <strong>Reading Monad Mainnet and Testnet…</strong>
               <span>Loading vaults created by {shortAddress(account)}.</span>
             </div>
           ) : createdVaults.length === 0 ? (
@@ -194,18 +210,21 @@ export default function Home() {
             </div>
           ) : (
             <div className="history-list">
-              {[...createdVaults].reverse().map((vault, reverseIndex) => {
-                const index = createdVaults.length - reverseIndex - 1;
+              {createdVaults.map(({ address: vault, network, number }, index) => {
                 const status = Number(vaultDetails?.[index * 3] ?? 0);
                 const recipients = (vaultDetails?.[index * 3 + 1] ?? []) as readonly Address[];
                 const shares = (vaultDetails?.[index * 3 + 2] ?? []) as readonly number[];
 
                 return (
-                  <Link className="history-card" href={`/vault/${vault}?network=mainnet`} key={vault}>
+                  <Link
+                    className="history-card"
+                    href={`/vault/${vault}?network=${network}`}
+                    key={`${network}:${vault}`}
+                  >
                     <div className="history-card-top">
                       <div>
-                        <span className="field-label">PAYOUT VAULT</span>
-                        <strong>{vaultLabels[vault.toLowerCase()] || `Split ${index + 1}`}</strong>
+                        <span className="field-label">PAYOUT VAULT · {monadChains[network].name}</span>
+                        <strong>{vaultLabels[`${network}:${vault.toLowerCase()}`] || `Split ${number}`}</strong>
                       </div>
                       <span className={`status-pill status-${(vaultStatuses[status] ?? "Unknown").toLowerCase()}`}>
                         {vaultStatuses[status] ?? "Unknown"}
@@ -227,8 +246,8 @@ export default function Home() {
             </div>
           )}
           <p className="history-note">
-            This list comes from the factory contract and follows the connected creator wallet.
-            Friendly labels stay only in this browser.
+            This list comes from the Mainnet and Testnet factory contracts and follows the
+            connected creator wallet. Friendly labels stay only in this browser.
           </p>
         </section>
 
