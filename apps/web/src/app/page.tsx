@@ -323,6 +323,7 @@ export default function Home() {
             <a href="https://github.com/alva-p" target="_blank" rel="noreferrer">GitHub</a>
             <a href="https://www.linkedin.com/in/%C3%A1lvaro-pineda/" target="_blank" rel="noreferrer">LinkedIn</a>
             <a href="https://x.com/pimmpi_" target="_blank" rel="noreferrer">X / Twitter</a>
+            <a href="/llms.txt">AI brief</a>
             <a href="mailto:alvaropineda1017@gmail.com">Email</a>
           </nav>
         </div>

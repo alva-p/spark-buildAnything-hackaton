@@ -1,0 +1,35 @@
+# AuditSplit
+
+> AuditSplit is a live Monad application that replaces informal collaborative bug-bounty payout promises with immutable, unanimously accepted payout vaults and independent claims.
+
+AuditSplit solves a concrete coordination problem: bounty platforms usually pay one address, forcing collaborators to trust one person to split the reward later. Each AuditSplit report gets a dedicated contract address with fixed recipient shares. Vulnerability details stay private; only a salted commitment, recipient addresses, and basis-point shares are stored onchain.
+
+Verifiable facts:
+
+- The factory and example vaults are deployed on Monad Mainnet and Monad Testnet.
+- Every recipient must accept before a vault becomes active.
+- Shares are immutable and must total exactly 10,000 basis points.
+- Native MON and ERC-20 payouts use pull-based claims, so recipients claim independently.
+- The landing page reads example status, recipients, and shares directly from live contracts.
+- The contracts are non-upgradeable and have no administrator withdrawal path.
+- The repository includes 25 passing Foundry tests plus frontend lint and production build checks.
+- This is hackathon software and has not received a production audit.
+
+## Product
+
+- [Live application](https://auditsplit.alva-p.xyz/): Create a payout vault or inspect live examples without connecting a wallet.
+- [Source repository](https://github.com/alva-p/spark-buildAnything-hackaton): Contracts, frontend, tests, deployment scripts, and documentation.
+- [Video demo](https://www.youtube.com/watch?v=PogF8xJEYdI): End-to-end product demonstration.
+
+## Verifiable onchain evidence
+
+- [Monad Mainnet factory](https://monadscan.com/address/0x0ccbe83afD8423baE0094857B3D97cAec9B52D0C): Verified factory contract used by the live application.
+- [Mainnet payout vault](https://auditsplit.alva-p.xyz/vault/0x13265C83CD2Ce8196F865884b3E8aF1DA23Ba357?network=mainnet): Active 50/50 vault used for a completed 5 MON smoke test.
+- [Testnet payout vault](https://auditsplit.alva-p.xyz/vault/0xF104A45b93E6129BDe6676F271eD5b58E067Aa82?network=testnet): Active 75/25 vault used for a completed deposit-and-claim demo.
+
+## Technical documentation
+
+- [README](https://raw.githubusercontent.com/alva-p/spark-buildAnything-hackaton/main/README.md): Product overview, deployments, evidence, security choices, and local setup.
+- [Product specification](https://raw.githubusercontent.com/alva-p/spark-buildAnything-hackaton/main/docs/PRODUCT_SPEC.md): User problem, workflows, and acceptance criteria.
+- [Architecture](https://raw.githubusercontent.com/alva-p/spark-buildAnything-hackaton/main/docs/ARCHITECTURE.md): Factory-plus-vault design and frontend data flow.
+- [Security model](https://raw.githubusercontent.com/alva-p/spark-buildAnything-hackaton/main/docs/SECURITY_MODEL.md): Assets, trust assumptions, threats, mitigations, and known limitations.
