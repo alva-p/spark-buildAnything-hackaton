@@ -6,6 +6,7 @@ import {
   validateSplit,
 } from "../apps/web/src/lib/create-vault.ts";
 import { parseMonAmount } from "../apps/web/src/lib/vault.ts";
+import { resolveVaultNetwork } from "../apps/web/src/lib/monad.ts";
 
 const alice = "0x0000000000000000000000000000000000000001";
 const bob = "0x0000000000000000000000000000000000000002";
@@ -27,5 +28,8 @@ assert.notEqual(commitment, reportCommitment("Example", "different-id", salt));
 assert.equal(parseMonAmount("0.25"), 250_000_000_000_000_000n);
 assert.equal(parseMonAmount("0"), "Enter an amount greater than 0 MON.");
 assert.equal(parseMonAmount("not-a-number"), "Enter a valid MON amount.");
+assert.equal(resolveVaultNetwork(null, true, true), "mainnet");
+assert.equal(resolveVaultNetwork(null, false, true), "testnet");
+assert.equal(resolveVaultNetwork("testnet", true, false), "testnet");
 
 console.log("web transaction helpers: ok");

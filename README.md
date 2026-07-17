@@ -54,7 +54,7 @@ The contract uses pull-based claims: one recipient never needs to wait for, or d
 | Factory deployment | [`0x7e6492…86ed8`](https://monadscan.com/tx/0x7e6492ad87d575bea55fe53249b012d4e3177aae711755d56f68b6e637d86ed8) |
 | Deployer | [`0xC56a071b9363F29B18538747b59670b7e6A3558b`](https://monadscan.com/address/0xC56a071b9363F29B18538747b59670b7e6A3558b) |
 | Verified source | [`exact_match` on Sourcify](https://sourcify-api-monad.blockvision.org/v2/verify/8ea28860-3aed-411c-bfaf-e3e29eb1dde1) |
-| Mainnet smoke test | [`0x13265C…Ba357`](https://auditsplit.alva-p.xyz/vault/0x13265C83CD2Ce8196F865884b3E8aF1DA23Ba357) · 5 MON fully claimed |
+| Mainnet smoke test | [`0x13265C…Ba357`](https://auditsplit.alva-p.xyz/vault/0x13265C83CD2Ce8196F865884b3E8aF1DA23Ba357?network=mainnet) · 5 MON fully claimed |
 
 ### Testnet
 
@@ -74,7 +74,7 @@ A live two-recipient payout completed successfully on Monad Testnet with a 75% /
 
 | Step | Onchain evidence |
 |---|---|
-| Demo vault | [`0xF104A4…67Aa82`](https://testnet.monadscan.com/address/0xF104A45b93E6129BDe6676F271eD5b58E067Aa82) |
+| Demo vault | [`0xF104A4…67Aa82`](https://auditsplit.alva-p.xyz/vault/0xF104A45b93E6129BDe6676F271eD5b58E067Aa82?network=testnet) |
 | Vault creation | [`0x2fd3d2…3052a6`](https://testnet.monadscan.com/tx/0x2fd3d24bc1a4f0f3c5a1d4909d36d3a5db35685163a7ac8ccc34fa500b3052a6) |
 | 5 MON payout | [`0x7bb995…cf520a`](https://testnet.monadscan.com/tx/0x7bb995afe15b1041bce0a11fb4e9daaa23fbebc675c06e2cccad9cdd18cf520a) |
 | 75% claim · 3.75 MON | [`0xc5693e…ec5d0a`](https://testnet.monadscan.com/tx/0xc5693e4cd27c1fe6c6da6943732b2e50dd4fca6b3260b073a3e86bf775ec5d0a) |
